@@ -1,0 +1,55 @@
+name: better_together
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+5
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.2.0
+  cloud_firestore: ^6.0.3
+  firebase_storage: ^13.0.3
+  firebase_analytics: ^12.0.3
+  intl: ^0.19.0
+  provider: ^6.1.2
+  google_fonts: ^6.2.1
+  confetti: ^0.8.0
+  shared_preferences: ^2.3.3
+  share_plus: ^7.2.2
+  auto_size_text: ^3.0.0
+  path_provider: ^2.1.5
+  profanity_filter: ^2.0.0
+  purchases_flutter: ^8.2.3
+  purchases_ui_flutter: ^8.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/assets/blitz.png
+    - lib/assets/nowblitznobg.png
+    - lib/assets/profanity_words.txt
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/Now..png"
+  image_path_ios: "lib/assets/Now..png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "lib/assets/Now..png"
+  
+  # Dark mode icons (iOS 18+)
+  image_path_ios_dark: "lib/assets/Now.dark.png"
+  
+  # Remove old launcher icons
+  remove_alpha_ios: true

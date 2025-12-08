@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "470214857625",
+    "project_id": "better-together-deed2",
+    "storage_bucket": "better-together-deed2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470214857625:android:8d7e06c249c9786b5ff908",
+        "android_client_info": {
+          "package_name": "com.now.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGxW_Dyi8E17pEWmKuzTJr9gNkdEFhBb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470214857625:android:9b8bc76935f49c8a5ff908",
+        "android_client_info": {
+          "package_name": "com.szetstudios.now"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGxW_Dyi8E17pEWmKuzTJr9gNkdEFhBb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
