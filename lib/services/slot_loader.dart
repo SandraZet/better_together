@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 
 class SlotLoader {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
@@ -16,10 +15,12 @@ class SlotLoader {
 
   String getCurrentDateString([DateTime? dt]) {
     final d = dt ?? DateTime.now();
+    final hour = d.hour;
 
-    // Night slot (22:00-06:00) can span two calendar days
-    // If it's after midnight but before 6am, use YESTERDAY's date
-    if (d.hour >= 0 && d.hour < 6) {
+    // Night slot (22:00-06:00) spans two calendar days
+    // BUT: Morning slot starts at 5:00, so only 0:00-4:59 should use yesterday
+    // Between 5:00-5:59: use TODAY (it's already morning slot, not night anymore)
+    if (hour >= 0 && hour < 5) {
       final yesterday = d.subtract(const Duration(days: 1));
       return "${yesterday.year}-${_two(yesterday.month)}-${_two(yesterday.day)}";
     }
@@ -127,25 +128,15 @@ class SlotLoader {
         'location': taskData['location'] ?? '',
         'submittedBy': taskData['submittedBy'] ?? '',
         'sponsoredBy': slotData['sponsoredBy'] ?? '',
+        'sponsorUrl': slotData['sponsorUrl'] ?? '',
         'completions': slotData['completions'] ?? 0,
         'slot': slot,
         'date': date,
         'nicknames': nicknames,
       };
     } catch (e) {
-      // fallback safe object
-      return {
-        'taskId': '',
-        'headline': 'Error',
-        'text': '',
-        'submittedBy': '',
-        'location': '',
-        'sponsoredBy': '',
-        'completions': 0,
-        'slot': getCurrentSlotName(now),
-        'date': getCurrentDateString(now),
-        'nicknames': <String>[],
-      };
+      print('❌ Error loading slot: $e');
+      rethrow; // Fehler weiterwerfen, damit slot_screen.dart ihn abfangen kann
     }
   }
 

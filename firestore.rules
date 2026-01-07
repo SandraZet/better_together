@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Tasks - nur lesen, erstellen/ändern nur via Admin/Script
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow write: if false; // Nur via Google Script/Admin Console
+    }
+    
+    // Slots - lesen alle, update nur für completions/nicknames
+    match /slots/{docId} {
+      allow read: if true;
+      allow create: if false; // Nur via Google Script/Admin Console
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['completions', 'nicknames']);
+      allow delete: if false;
+    }
+    
+    // Ideas - nur erstellen, lesen nur via Admin Console
+    match /ideas/{ideaId} {
+      allow read: if false; // Nur via Admin Console
+      allow create: if true;
+      allow update, delete: if false;
+    }
+    
+    // Task Completions - jeder kann erstellen
+    match /task_completions/{completionId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+    
+    // Users - alle können lesen und schreiben (für Nicknames)
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Standard: alles andere verweigern
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -4,9 +4,9 @@ import 'package:better_together/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'providers/app_state_provider.dart';
+// import 'providers/app_state_provider.dart';
 import 'services/profanity_service.dart';
 import 'services/revenue_cat_service.dart';
 import 'services/analytics_service.dart';
@@ -36,20 +36,17 @@ class BetterTogetherApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AppStateProvider()..initializeApp(),
-      child: MaterialApp(
-        title: 'Now.',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
-          useMaterial3: true,
-        ),
-        navigatorObservers: [AnalyticsService().observer],
-        home: SplashScreen(
-          nextScreen: OnboardingScreen(nextScreen: const SlotScreen()),
-        ),
-        debugShowCheckedModeBanner: false,
+    return MaterialApp(
+      title: 'Now.',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
+        useMaterial3: true,
       ),
+      navigatorObservers: [AnalyticsService().observer],
+      home: SplashScreen(
+        nextScreen: OnboardingScreen(nextScreen: const SlotScreen()),
+      ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

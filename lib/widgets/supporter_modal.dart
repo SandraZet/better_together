@@ -182,7 +182,7 @@ class _SupporterModalState extends State<SupporterModal> {
 
               // Subtitle
               Text(
-                'Be part and make Now. awesome for everyone',
+                'Be part and make Now. awesome for everyone.',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -301,9 +301,9 @@ class _SupporterModalState extends State<SupporterModal> {
         }
 
         final title = displayTitle.toLowerCase();
-        if (title.contains('coffee') || title.contains('kaffee')) {
+        if (title.contains('time') || title.contains('kaffee')) {
           emoji = '☕';
-        } else if (title.contains('supporter') || title.contains('support')) {
+        } else if (title.contains('monthly') || title.contains('support')) {
           emoji = '🌍';
         }
 

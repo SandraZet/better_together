@@ -9,11 +9,11 @@ class TimezoneModal extends StatefulWidget {
   final String currentSlot;
 
   const TimezoneModal({
-    Key? key,
+    super.key,
     required this.counter,
     required this.nicknames,
     required this.currentSlot,
-  }) : super(key: key);
+  });
 
   @override
   State<TimezoneModal> createState() => _TimezoneModalState();
@@ -45,11 +45,21 @@ class _TimezoneModalState extends State<TimezoneModal> {
     {'name': '🇳🇿 New Zealand', 'offset': 13.0},
     {'name': '🇫🇯 Fiji', 'offset': 12.0},
     {'name': '🇦🇺 Sydney', 'offset': 11.0},
+    {'name': '🇦🇺 Brisbane', 'offset': 10.0},
+    {'name': '🇷🇺 Vladivostok', 'offset': 10.0},
+    {'name': '🇦🇺 Adelaide', 'offset': 9.5},
     {'name': '🇯🇵 Tokyo', 'offset': 9.0},
     {'name': '🇨🇳 Beijing', 'offset': 8.0},
+    {'name': '🇷🇺 Novosibirsk', 'offset': 7.0},
     {'name': '🇹🇭 Bangkok', 'offset': 7.0},
+    {'name': '🇮🇩 Jakarta', 'offset': 7.0},
+    {'name': '🇲🇲 Yangon', 'offset': 6.5},
+    {'name': '🇧🇩 Dhaka', 'offset': 6.0},
     {'name': '🇮🇳 Mumbai', 'offset': 5.5},
+    {'name': '🇵🇰 Karachi', 'offset': 5.0},
+    {'name': '🇦🇫 Kabul', 'offset': 4.5},
     {'name': '🇦🇪 Dubai', 'offset': 4.0},
+    {'name': '🇮🇷 Tehran', 'offset': 3.5},
     {'name': '🇷🇺 Moscow', 'offset': 3.0},
     {'name': '🇬🇷 Athens', 'offset': 2.0},
     {'name': '🇩🇪 Berlin', 'offset': 1.0},
@@ -57,14 +67,21 @@ class _TimezoneModalState extends State<TimezoneModal> {
     {'name': '🇬🇧 London', 'offset': 0.0},
     {'name': '🇮🇸 Reykjavik', 'offset': 0.0},
     {'name': '🇨🇻 Cape Verde', 'offset': -1.0},
+    {'name': '🇬🇸 South Georgia', 'offset': -2.0},
     {'name': '🇧🇷 São Paulo', 'offset': -3.0},
+    {'name': '🇨🇦 Newfoundland', 'offset': -3.5},
+    {'name': '🇧🇷 Manaus', 'offset': -4.0},
+    {'name': '🇨🇱 Santiago', 'offset': -4.0},
+    {'name': '🇨🇦 Toronto', 'offset': -5.0},
     {'name': '🇺🇸 New York', 'offset': -5.0},
     {'name': '🇺🇸 Chicago', 'offset': -6.0},
     {'name': '🇲🇽 Mexico City', 'offset': -6.0},
     {'name': '🇺🇸 Denver', 'offset': -7.0},
     {'name': '🇺🇸 Los Angeles', 'offset': -8.0},
+    {'name': '🇨🇦 Vancouver', 'offset': -8.0},
     {'name': '🇺🇸 Alaska', 'offset': -9.0},
     {'name': '🇺🇸 Hawaii', 'offset': -10.0},
+    {'name': '🇦🇸 Samoa', 'offset': -11.0},
     {'name': '🇺🇲 Baker Island', 'offset': -12.0},
   ];
 

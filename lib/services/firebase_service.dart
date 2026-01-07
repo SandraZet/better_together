@@ -90,9 +90,13 @@ class FirebaseService {
       debugPrint('Error loading task: $e');
       return {
         'taskId': '',
-        'headline': 'Error',
-        'text': '',
+        'headline': 'Connection issue',
+        'text': 'Pull down to retry',
+        'subline': '',
         'submittedBy': '',
+        'sponsoredBy': '',
+        'location': '',
+        'nicknames': [],
         'completions': 0,
         'slot': slot,
         'date': date,

@@ -1,6 +1,7 @@
 import 'package:better_together/services/slot_loader.dart';
-import 'package:better_together/debug_prefs.dart';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -13,7 +14,7 @@ import 'package:better_together/widgets/timezone_modal.dart';
 import 'package:better_together/widgets/share_preview_sheet.dart';
 import 'package:better_together/widgets/supporter_modal.dart';
 import 'package:better_together/services/analytics_service.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'package:better_together/screens/settings_screen.dart';
 import 'package:better_together/helpers/nickname_helper.dart';
 
@@ -32,15 +33,15 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   final AnalyticsService _analytics = AnalyticsService();
 
   String _headline = "";
-  String _subline = "";
+
   String _text = "";
   String _submittedBy = "";
   String _sponsoredBy = "";
+  String _sponsorUrl = "";
   String _location = "";
   int _counter = 0;
   List<String> _nicknames = [];
 
-  String _date = "";
   String _slot = "";
   String _nickname = "";
   String _taskId = "";
@@ -104,14 +105,14 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       final isDone = await _slotLoader.isCurrentSlotDone();
 
       setState(() {
-        _date = data['date'];
         _slot = data['slot'];
         _taskId = data['taskId'] ?? '';
         _headline = data['headline'];
-        _subline = data['subline'] ?? '';
+
         _text = data['text'];
         _submittedBy = data['submittedBy'];
         _sponsoredBy = data['sponsoredBy'];
+        _sponsorUrl = data['sponsorUrl'] ?? '';
         _location = data['location'];
         _counter = data['completions'];
         _nicknames = List<String>.from(
@@ -192,14 +193,14 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     } else if (_slot == "afternoon") {
       next = DateTime(now.year, now.month, now.day, 22, 0, 0);
     } else {
-      // night → next morning @ 06:00
-      // If it's already past midnight but before 6am, 6am is TODAY
-      if (now.hour < 6) {
-        next = DateTime(now.year, now.month, now.day, 6, 0, 0);
+      // night → next morning @ 05:00
+      // If it's already past midnight but before 5am, 5am is TODAY
+      if (now.hour < 5) {
+        next = DateTime(now.year, now.month, now.day, 5, 0, 0);
       } else {
-        // Otherwise it's tomorrow at 6am
+        // Otherwise it's tomorrow at 5am
         final tomorrow = now.add(const Duration(days: 1));
-        next = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 0, 0);
+        next = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 5, 0, 0);
       }
     }
 
@@ -238,6 +239,133 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
       setState(() => _remainingSeconds--);
     });
+  }
+
+  // ================================================================
+  // DEBUG: Bot Auto-Complete (REMOVE BEFORE RELEASE)
+  // ================================================================
+  Future<void> _botAutoComplete() async {
+    // Generate random nickname
+    final randomNames = [
+      'alex',
+      'sam',
+      'jordan',
+      'taylor',
+      'casey',
+      'riley',
+      'morgan',
+      'avery',
+      'quinn',
+      'charlie',
+      'drew',
+      'jamie',
+      'kai',
+      'skyler',
+      'phoenix',
+      'river',
+      'sage',
+      'rowan',
+      'finley',
+      'Dakota',
+      'emerson',
+      'hayden',
+      'justice',
+      'lennon',
+      'marley',
+      'navy',
+      'oakley',
+      'parker',
+      'rebel',
+      'scout',
+      'tatum',
+      'winter',
+      'zion',
+      'ash',
+      'blue',
+      'cloud',
+      'max_99',
+      'anna_22',
+      'leo_7',
+      'mia_11',
+      'tim_42',
+      'lisa_88',
+      'ben_5',
+      'nina_13',
+      'tom_777',
+      'emma_1',
+      'paul_21',
+      'lara_55',
+    ];
+    final randomNickname = (randomNames..shuffle()).first;
+
+    // Generate random location
+    final randomLocations = [
+      'vienna',
+      'austria',
+      'tokyo',
+      'bgld',
+      'grimmenstein',
+      'salzburg',
+      'tulln',
+      'linz',
+      'graz',
+      'innsbruck',
+      'klagenfurt',
+      'berlin',
+      'paris',
+      'london',
+      'madrid',
+      'rome',
+      'bangkok',
+      'vienna',
+      'mumbai',
+      'sydney',
+    ];
+    final randomLocation = (randomLocations..shuffle()).first;
+
+    // Clear preferences BUT keep hasSeenOnboarding and done flags
+    final prefs = await SharedPreferences.getInstance();
+    final hadSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
+    // Save all done flags (format: YYYY-MM-DD_slot_done)
+    final allKeys = prefs.getKeys();
+    final doneFlags = <String, bool>{};
+    for (final key in allKeys) {
+      if (key.endsWith('_done')) {
+        doneFlags[key] = prefs.getBool(key) ?? false;
+      }
+    }
+
+    await prefs.clear();
+
+    // Restore flags
+    if (hadSeenOnboarding) {
+      await prefs.setBool('hasSeenOnboarding', true);
+    }
+    for (final entry in doneFlags.entries) {
+      await prefs.setBool(entry.key, entry.value);
+    }
+
+    await prefs.setString('nickname', randomNickname);
+    await prefs.setString('location', randomLocation);
+
+    // Complete task with nickname|location format
+    final displayName = '$randomNickname|$randomLocation';
+    await _slotLoader.addCompletion(nickname: displayName);
+
+    // Show toast
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🤖 Bot completed as "$randomNickname"'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.purple,
+      ),
+    );
+
+    // Reload
+    await Future.delayed(const Duration(milliseconds: 500));
+    _loadSlotAndTask();
   }
 
   // ================================================================
@@ -283,67 +411,18 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     _startScreenSaver();
   }
 
-  String _buildShareMessage() {
-    final slotLabel = _slot.isEmpty
-        ? "today's slot"
-        : '${_slot.toLowerCase()} slot';
-    final buffer = StringBuffer()
-      ..writeln('I just completed "$_headline" in the $slotLabel on NOW.')
-      ..writeln();
-
-    if (_date.isNotEmpty) {
-      buffer
-        ..writeln('Date: $_date')
-        ..writeln();
-    }
-
-    if (_text.isNotEmpty) {
-      buffer
-        ..writeln(_text)
-        ..writeln();
-    }
-
-    buffer
-      ..writeln('Come do one with me ✨')
-      ..writeln('https://now.bettertogether.world');
-
-    return buffer.toString().trim();
-  }
-
-  String _getJoinAgainText() {
-    return 'Join again at:';
-  }
-
   String _getNextSlotTime(String currentSlot) {
     switch (currentSlot.toLowerCase()) {
       case 'morning':
-        return '12pm \u2014 5pm';
+        return '12pm';
       case 'noon':
-        return '5pm \u2014 10pm';
+        return '5pm';
       case 'afternoon':
-        return '10pm \u2014 5am';
+        return '10pm';
       case 'night':
-        return '5am \u2014 12pm';
+        return '5am';
       default:
         return 'soon';
-    }
-  }
-
-  Future<void> _shareTask({String? precomposed}) async {
-    HapticFeedback.mediumImpact();
-
-    final message = precomposed ?? _buildShareMessage();
-
-    try {
-      await Share.share(message, subject: 'Join me on NOW');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Share failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -493,9 +572,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                 child: Text(
                   _fmt(_remainingSeconds),
                   style: GoogleFonts.poppins(
-                    color: _slot == 'night'
-                        ? Colors.white.withOpacity(0.35)
-                        : Colors.black87,
+                    color: _slot == 'night' ? Colors.black87 : Colors.black87,
                     fontSize: 17,
                     letterSpacing: 0.5,
                     fontWeight: FontWeight.w600,
@@ -616,66 +693,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               child: Stack(
                 children: [
                   _buildGradientBackground(child: _buildActiveView()),
-                  if (_isDone)
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: SafeArea(
-                        child: FadeTransition(
-                          opacity: _fadeInAnimation,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _getJoinAgainText(),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: _slot == 'night'
-                                        ? Colors.black54
-                                        : Colors.black54,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                // const SizedBox(height: 4),
-                                Text(
-                                  _getNextSlotTime(_slot),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: _slot == 'night'
-                                        ? Colors.black54
-                                        : Colors.black87,
-                                    letterSpacing: 0.87,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        offset: const Offset(0, 2),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _fmt(_remainingSeconds),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: _slot == 'night'
-                                        ? Colors.black38
-                                        : Colors.black54,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+
                   if (_isDone)
                     Positioned.fill(
                       child: IgnorePointer(
@@ -722,6 +740,9 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                                   duration: const Duration(milliseconds: 800),
                                   child: _NicknamesBanner(
                                     nicknames: _nicknames,
+                                    isDone: _isDone,
+                                    slot: _slot,
+                                    nextSlotTime: _getNextSlotTime(_slot),
                                   ),
                                 ),
                               ),
@@ -737,6 +758,15 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
+
+      // ================================================================
+      // DEBUG: Bot Auto-Complete Button (COMMENT OUT BEFORE RELEASE)
+      // ================================================================
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _botAutoComplete,
+      //   backgroundColor: Colors.purple.withOpacity(0.8),
+      //   child: const Text('🤖', style: TextStyle(fontSize: 24)),
+      // ),
     );
   }
 
@@ -1013,27 +1043,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          if (_subline.isNotEmpty) const SizedBox(height: 44),
-
-          if (_subline.isNotEmpty)
-            FadeTransition(
-              opacity: _textFadeOut,
-              child: Text(
-                _subline,
-                style: GoogleFonts.poppins(
-                  color: _slot == 'night'
-                      ? const Color(0xFFE5E0EA).withOpacity(0.5)
-                      : Colors.white.withOpacity(0.8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-
-                  height: 1,
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 12),
+          const SizedBox(height: 44),
 
           FadeTransition(opacity: _textFadeOut, child: _buildSubmittedBy()),
 
@@ -1115,12 +1125,13 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               secondChild: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(height: 0),
                   ScaleTransition(
                     scale: _doneScale,
                     child: Text(
                       _getDoneTitle(),
                       style: GoogleFonts.poppins(
-                        fontSize: _slot == 'night' ? 24 : 32,
+                        fontSize: _slot == 'night' ? 36 : 32,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
                         color: _slot == 'night'
@@ -1132,16 +1143,16 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
                   Text(
                     _getDoneSubtitle(),
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: _slot == 'night'
                           ? Colors.white.withOpacity(0.4)
                           : Colors.white,
-                      fontSize: _slot == 'night' ? 12 : 20,
+                      fontSize: _slot == 'night' ? 14 : 20,
                       fontWeight: FontWeight.w400,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 56),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1206,38 +1217,52 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
+
                   if (_sponsoredBy.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Supported with kindness by\n',
-                            style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              fontWeight: FontWeight.w400,
-                              color: _slot == 'night'
-                                  ? Colors.white.withOpacity(0.3)
-                                  : Colors.black54,
-                              fontSize: 11,
-                              letterSpacing: 0.5,
+                    const SizedBox(height: 28),
+                    GestureDetector(
+                      onTap: _sponsorUrl.isNotEmpty
+                          ? () async {
+                              try {
+                                final uri = Uri.parse(_sponsorUrl);
+                                await launchUrl(uri);
+                              } catch (e) {
+                                print('Could not launch URL: $e');
+                              }
+                            }
+                          : null,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Supported with kindness by\n',
+                              style: GoogleFonts.poppins(
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w400,
+                                color: _slot == 'night'
+                                    ? Colors.white.withOpacity(0.3)
+                                    : Colors.black54,
+                                fontSize: 11,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: _sponsoredBy,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: _slot == 'night'
-                                  ? Colors.white.withOpacity(0.3)
-                                  : Colors.black54,
-                              fontSize: 11,
-                              letterSpacing: 0.5,
+                            TextSpan(
+                              text: _sponsoredBy,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                color: _slot == 'night'
+                                    ? Colors.white.withOpacity(0.3)
+                                    : Colors.black54,
+                                fontSize: 13,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ],
               ),
@@ -1295,7 +1320,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       case 'afternoon':
         return 'See u in a bit!';
       case 'night':
-        return 'See you in the morning!';
+        return '';
       default:
         return 'That\'s enough for now';
     }
@@ -1310,13 +1335,13 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white60,
+        color: _slot == 'night' ? Colors.white12 : Colors.white60,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         'Idea: ⭐ $_submittedBy | $_location',
-        style: TextStyle(
-          color: _slot == 'night' ? const Color(0xFFE5E0EA) : Colors.black38,
+        style: GoogleFonts.poppins(
+          color: _slot == 'night' ? Colors.white38 : Colors.black38,
           fontSize: 13,
           fontWeight: FontWeight.w400,
           letterSpacing: 0.4,
@@ -1624,8 +1649,16 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 // ================================================================
 class _NicknamesBanner extends StatefulWidget {
   final List<String> nicknames;
+  final bool isDone;
+  final String slot;
+  final String nextSlotTime;
 
-  const _NicknamesBanner({required this.nicknames});
+  const _NicknamesBanner({
+    required this.nicknames,
+    required this.isDone,
+    required this.slot,
+    required this.nextSlotTime,
+  });
 
   @override
   State<_NicknamesBanner> createState() => _NicknamesBannerState();
@@ -1642,7 +1675,7 @@ class _NicknamesBannerState extends State<_NicknamesBanner>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 60), // Langsamer: 60 Sekunden
     )..repeat();
     _formatNicknames();
   }
@@ -1658,7 +1691,25 @@ class _NicknamesBannerState extends State<_NicknamesBanner>
         _formattedNicknames = formatted;
         _isLoading = false;
       });
+
+      // Geschwindigkeit dynamisch anpassen basierend auf Textlänge
+      _updateScrollSpeed();
     }
+  }
+
+  void _updateScrollSpeed() {
+    // Konstante Geschwindigkeit: Zeichen pro Sekunde
+    const charsPerSecond = 3.0; // Je kleiner, desto langsamer
+
+    final charCount = _formattedNicknames.join('   •   ').length;
+
+    // Duration = Anzahl Zeichen / Geschwindigkeit
+    final durationSeconds = (charCount / charsPerSecond).clamp(20.0, 300.0);
+
+    _controller.duration = Duration(
+      milliseconds: (durationSeconds * 1000).toInt(),
+    );
+    _controller.repeat();
   }
 
   @override
@@ -1678,14 +1729,17 @@ class _NicknamesBannerState extends State<_NicknamesBanner>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading && !widget.isDone) {
       return const SizedBox.shrink();
     }
 
-    final displayNames = _formattedNicknames
-        .map((name) => name.trim().isEmpty ? 'tom' : name)
-        .toList();
-    final text = displayNames.join('   •   ');
+    // If done state, show "Next tiny body&mind..." text instead of nicknames
+    final text = widget.isDone
+        ? 'Next global tiny body&mind reset starting at: ${widget.nextSlotTime}. '
+        : _formattedNicknames
+              .map((name) => name.trim().isEmpty ? 'tom' : name)
+              .join('   •   ');
+
     final textStyle = GoogleFonts.poppins(
       fontSize: 12,
       fontWeight: FontWeight.w500,
@@ -1714,7 +1768,8 @@ class _NicknamesBannerState extends State<_NicknamesBanner>
             return AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
-                final progress = _controller.value;
+                // Use linear interpolation for smooth scrolling
+                final progress = Curves.linear.transform(_controller.value);
                 final offset = maxWidth - (distance * progress);
                 return Transform.translate(
                   offset: Offset(offset, 0),

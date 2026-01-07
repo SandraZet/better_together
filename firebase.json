@@ -1,1 +1,29 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"better-together-deed2","appId":"1:470214857625:android:0f35416fbcd3b1d65ff908","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"better-together-deed2","configurations":{"android":"1:470214857625:android:0f35416fbcd3b1d65ff908","ios":"1:470214857625:ios:63988f3a15a939175ff908","macos":"1:470214857625:ios:63988f3a15a939175ff908","web":"1:470214857625:web:c59260adcb7ab5d95ff908","windows":"1:470214857625:web:b30737e223261a255ff908"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "database": "nowdb"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "better-together-deed2",
+          "appId": "1:470214857625:android:0f35416fbcd3b1d65ff908",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "better-together-deed2",
+          "configurations": {
+            "android": "1:470214857625:android:0f35416fbcd3b1d65ff908",
+            "ios": "1:470214857625:ios:63988f3a15a939175ff908",
+            "macos": "1:470214857625:ios:63988f3a15a939175ff908",
+            "web": "1:470214857625:web:c59260adcb7ab5d95ff908",
+            "windows": "1:470214857625:web:b30737e223261a255ff908"
+          }
+        }
+      }
+    }
+  }
+}

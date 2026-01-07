@@ -11,8 +11,11 @@ import 'package:better_together/services/analytics_service.dart';
 class IdeaModal extends StatefulWidget {
   final String nickname;
   final VoidCallback onSubmitted;
-  const IdeaModal({Key? key, required this.nickname, required this.onSubmitted})
-    : super(key: key);
+  const IdeaModal({
+    super.key,
+    required this.nickname,
+    required this.onSubmitted,
+  });
 
   @override
   State<IdeaModal> createState() => _IdeaModalState();

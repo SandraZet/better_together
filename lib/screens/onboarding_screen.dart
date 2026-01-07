@@ -196,6 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(height: 80),
                   _buildAnimatedStrikethroughText(
                     'act',
                     'scroll',
@@ -213,20 +214,46 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     'alone',
                     _line3Controller,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 80),
                   AnimatedBuilder(
                     animation: _nowController,
                     builder: (context, child) {
                       return Opacity(
                         opacity: _nowController.value,
-                        child: Text(
-                          'now.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 0.7,
-                          ),
+                        child: Column(
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [
+                                  Colors.pink.shade300,
+                                  Colors.purple.shade300,
+                                  Colors.blue.shade300,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: Text(
+                                'connected as equals',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                  fontStyle: FontStyle.italic,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Now.',
+                              style: GoogleFonts.poppins(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.7,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -565,18 +592,37 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Three mini-actions each day.\n',
+                      text: 'Three mini-actions each day\n',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.7),
-                        height: 1.5,
+                        height: 1.6,
                       ),
                     ),
                     TextSpan(
-                      text: "You can't fake it to feel it.",
+                      text: 'to interrupt your mind and\n',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.7),
+                        height: 1.6,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'give you a moment just for you.\n\n',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.7),
+                        height: 1.6,
+                      ),
+                    ),
+
+                    TextSpan(
+                      text: "You can't fake it to feel it.",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
                         foreground: Paint()
                           ..shader = const LinearGradient(
@@ -589,7 +635,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               Color(0xFF00D4FF),
                             ],
                           ).createShader(const Rect.fromLTWH(0, 0, 300, 50)),
-                        height: 1.5,
+                        height: 3,
                       ),
                     ),
                   ],

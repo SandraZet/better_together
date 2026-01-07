@@ -2,7 +2,7 @@ name: better_together
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.0+10
 
 environment:
   sdk: ^3.8.1
@@ -26,6 +26,7 @@ dependencies:
   profanity_filter: ^2.0.0
   purchases_flutter: ^8.2.3
   purchases_ui_flutter: ^8.2.3
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

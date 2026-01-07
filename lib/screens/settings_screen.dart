@@ -97,6 +97,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Widget _buildSlotTimeRow(String slotName, String timeRange) {
+    final times = timeRange.split(' - ');
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          slotName,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Row(
+          children: [
+            SizedBox(
+              width: 50,
+              child: Text(
+                times[0],
+                textAlign: TextAlign.right,
+                style: GoogleFonts.poppins(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Text(
+              ' - ',
+              style: GoogleFonts.poppins(
+                color: Colors.grey[400],
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            SizedBox(
+              width: 50,
+              child: Text(
+                times[1],
+                textAlign: TextAlign.left,
+                style: GoogleFonts.poppins(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,6 +241,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
+              ),
+              const SizedBox(height: 48),
+              Divider(color: Colors.grey[600], thickness: 1),
+              const SizedBox(height: 24),
+              Text(
+                'Slot Times',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildSlotTimeRow('Morning', '05:00 - 12:00'),
+                    const SizedBox(height: 12),
+                    _buildSlotTimeRow('Noon', '12:00 - 17:00'),
+                    const SizedBox(height: 12),
+                    _buildSlotTimeRow('Afternoon', '17:00 - 22:00'),
+                    const SizedBox(height: 12),
+                    _buildSlotTimeRow('Night', '22:00 - 06:00'),
+                  ],
                 ),
               ),
               const SizedBox(height: 48),

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOW Tablet Screenshots (1440x2560 - 9:16)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            font-family: 'Poppins', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            width: 800px;
+            color: white;
+        }
+        .control-row {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        label {
+            width: 150px;
+            font-weight: 600;
+        }
+        input, select {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #333;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #333;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            padding: 12px 28px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        canvas {
+            border: 2px solid #444;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .preset-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: #444;
+        }
+        h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: white;">NOW Tablet Screenshots (1440x2560 - 9:16)</h1>
+    
+    <div class="controls">
+        <h2>Screenshot Einstellungen</h2>
+        
+        <div class="control-row">
+            <label>Slot:</label>
+            <select id="slot" onchange="updatePreview()">
+                <option value="morning">Morning</option>
+                <option value="noon">Noon</option>
+                <option value="afternoon">Afternoon</option>
+                <option value="night">Night</option>
+            </select>
+        </div>
+
+        <div class="control-row">
+            <label>Headline:</label>
+            <input type="text" id="headline" value="Stretch." onchange="updatePreview()">
+        </div>
+
+        <div class="control-row">
+            <label>Text:</label>
+            <textarea id="text" onchange="updatePreview()">Take a few moments to stretch your body. Feel each muscle loosen as you move.</textarea>
+        </div>
+
+        <div class="control-row">
+            <label>Counter:</label>
+            <input type="number" id="counter" value="847" onchange="updatePreview()">
+        </div>
+
+        <div class="control-row">
+            <label>Status:</label>
+            <select id="status" onchange="updatePreview()">
+                <option value="active">Active (mit Button)</option>
+                <option value="done">Done (nach Completion)</option>
+            </select>
+        </div>
+
+        <div class="control-row">
+            <label>Countdown:</label>
+            <input type="text" id="countdown" value="03:24:15" onchange="updatePreview()">
+        </div>
+
+        <h3 style="color: #667eea; margin-top: 30px;">Presets</h3>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="loadPreset('stretch')">Stretch (Morning)</button>
+            <button class="preset-btn" onclick="loadPreset('breath')">Breath (Noon)</button>
+            <button class="preset-btn" onclick="loadPreset('walk')">Walk (Afternoon)</button>
+            <button class="preset-btn" onclick="loadPreset('reflect')">Reflect (Night)</button>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="generateScreenshot()">📸 Screenshot generieren</button>
+            <button onclick="downloadScreenshot()">⬇️ PNG herunterladen (1440x2560)</button>
+        </div>
+    </div>
+
+    <canvas id="canvas" width="1440" height="2560"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const presets = {
+            stretch: {
+                slot: 'morning',
+                headline: 'Stretch.',
+                text: 'Take a few moments to stretch your body. Feel each muscle loosen as you move.',
+                counter: 847,
+                status: 'active'
+            },
+            breath: {
+                slot: 'noon',
+                headline: 'Breathe.',
+                text: 'Close your eyes. Take three deep breaths. In through the nose, out through the mouth.',
+                counter: 1234,
+                status: 'active'
+            },
+            walk: {
+                slot: 'afternoon',
+                headline: 'Walk.',
+                text: 'Step outside or move around indoors. Just a few minutes of movement.',
+                counter: 956,
+                status: 'done'
+            },
+            reflect: {
+                slot: 'night',
+                headline: 'Rest.',
+                text: 'Let go of today. Tomorrow is a new beginning.',
+                counter: 623,
+                status: 'active'
+            }
+        };
+
+        function loadPreset(preset) {
+            const data = presets[preset];
+            document.getElementById('slot').value = data.slot;
+            document.getElementById('headline').value = data.headline;
+            document.getElementById('text').value = data.text;
+            document.getElementById('counter').value = data.counter;
+            document.getElementById('status').value = data.status;
+            updatePreview();
+        }
+
+        function getGradientColors(slot) {
+            const colors = {
+                morning: ['#FFE5B4', '#FFB6C1', '#87CEEB'],
+                noon: ['#FFD700', '#FFA500', '#00CED1'],
+                afternoon: ['#FFA53E', '#667EEA', '#64B5F6'],
+                night: ['#1E3A5F', '#2D1B4E', '#0F2027']
+            };
+            return colors[slot] || colors.morning;
+        }
+
+        function getTextColor(slot) {
+            return slot === 'night' ? '#E5E0EA' : '#FFFFFF';
+        }
+
+        function getSubtextColor(slot) {
+            return slot === 'night' ? 'rgba(229, 224, 234, 0.5)' : 'rgba(0, 0, 0, 0.6)';
+        }
+
+        async function generateScreenshot() {
+            const slot = document.getElementById('slot').value;
+            const headline = document.getElementById('headline').value;
+            const text = document.getElementById('text').value;
+            const counter = document.getElementById('counter').value;
+            const status = document.getElementById('status').value;
+            const countdown = document.getElementById('countdown').value;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gradient Background
+            const colors = getGradientColors(slot);
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, colors[0]);
+            gradient.addColorStop(0.5, colors[1]);
+            gradient.addColorStop(1, colors[2]);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Vignette
+            const vignette = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, canvas.width * 0.8
+            );
+            vignette.addColorStop(0.7, 'transparent');
+            vignette.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // App Bar - "Now." Logo
+            ctx.font = '900 52px Poppins';
+            ctx.fillStyle = slot === 'night' ? 'rgba(255, 255, 255, 0.35)' : '#FFFFFF';
+            ctx.fillText('Now.', 120, 150);
+
+            // Countdown (centered)
+            if (status === 'active') {
+                ctx.font = '600 48px Poppins';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.87)';
+                ctx.textAlign = 'center';
+                ctx.fillText(countdown, canvas.width / 2, 150);
+                ctx.textAlign = 'left';
+            }
+
+            // Counter (top right)
+            ctx.font = '700 48px Poppins';
+            ctx.fillStyle = slot === 'night' ? 'rgba(255, 255, 255, 0.35)' : '#FFFFFF';
+            ctx.textAlign = 'right';
+            ctx.fillText('🌍 ' + counter, canvas.width - 120, 150);
+            ctx.textAlign = 'left';
+
+            // Headline (large, centered)
+            ctx.font = '900 180px Poppins';
+            ctx.fillStyle = getTextColor(slot);
+            const headlineY = 880;
+            ctx.textAlign = 'center';
+            wrapText(ctx, headline, canvas.width / 2, headlineY, 1200, 200);
+            ctx.textAlign = 'left';
+
+            // Bolt Icon (below headline)
+            ctx.font = '280px Arial';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚡', canvas.width / 2, headlineY + 420);
+            ctx.textAlign = 'left';
+
+            // Body text
+            ctx.font = '400 54px Poppins';
+            ctx.fillStyle = getSubtextColor(slot);
+            ctx.textAlign = 'center';
+            wrapText(ctx, text, canvas.width / 2, headlineY + 620, 1200, 75);
+            ctx.textAlign = 'left';
+
+            // Status: Button oder Done Message
+            if (status === 'active') {
+                // Button
+                const buttonY = canvas.height - 280;
+                const buttonWidth = 380;
+                const buttonHeight = 110;
+                const buttonX = (canvas.width - buttonWidth) / 2;
+
+                // Button background
+                ctx.fillStyle = slot === 'night' ? 'rgba(0, 0, 0, 0.75)' : '#000000';
+                roundRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 32);
+                ctx.fill();
+
+                // Button text
+                ctx.font = '700 52px Poppins';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.textAlign = 'center';
+                const buttonText = slot === 'night' ? "I'm here." : "Did it!";
+                ctx.fillText(buttonText, canvas.width / 2, buttonY + 74);
+                ctx.textAlign = 'left';
+            } else {
+                // Done state
+                const doneY = canvas.height - 480;
+                ctx.font = '800 100px Poppins';
+                ctx.fillStyle = slot === 'night' ? 'rgba(255, 255, 255, 0.5)' : '#FFFFFF';
+                ctx.textAlign = 'center';
+                const doneTitle = slot === 'night' ? 'Sleep well.' : 'Done.';
+                ctx.fillText(doneTitle, canvas.width / 2, doneY);
+
+                // Subtitle
+                ctx.font = '400 56px Poppins';
+                ctx.fillStyle = slot === 'night' ? 'rgba(255, 255, 255, 0.4)' : '#FFFFFF';
+                const doneSubtitle = slot === 'night' ? '' : "That's enough for now.";
+                ctx.fillText(doneSubtitle, canvas.width / 2, doneY + 90);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let lineY = y;
+            const align = ctx.textAlign;
+
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' ';
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && i > 0) {
+                    ctx.fillText(line, x, lineY);
+                    line = words[i] + ' ';
+                    lineY += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, lineY);
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function updatePreview() {
+            generateScreenshot();
+        }
+
+        function downloadScreenshot() {
+            const link = document.createElement('a');
+            const slot = document.getElementById('slot').value;
+            const headline = document.getElementById('headline').value;
+            const timestamp = Date.now();
+            link.download = `now-tablet-${slot}-${headline.toLowerCase()}-${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Load default on page load
+        window.addEventListener('load', () => {
+            loadPreset('stretch');
+        });
+    </script>
+</body>
+</html>

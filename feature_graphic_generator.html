@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOW Feature Graphic Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        canvas {
+            border: 2px solid #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <h1>NOW Feature Graphic (1024x500)</h1>
+    <canvas id="canvas" width="1024" height="500"></canvas>
+    <button onclick="downloadImage()">Download PNG</button>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Preload Poppins fonts
+        async function loadFonts() {
+            const fontBold = new FontFace('Poppins', 'url(https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLCz7Z1xlFd2JQEk.woff2)', {
+                weight: '700'
+            });
+            const fontMedium = new FontFace('Poppins', 'url(https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFd2JQEk.woff2)', {
+                weight: '500'
+            });
+            
+            await fontBold.load();
+            await fontMedium.load();
+            document.fonts.add(fontBold);
+            document.fonts.add(fontMedium);
+        }
+
+        // Wait for fonts and then draw
+        loadFonts().then(() => {
+            setTimeout(() => {
+                drawGraphic();
+            }, 100);
+        });
+
+        function drawGraphic() {
+            // Clear canvas
+            ctx.clearRect(0, 0, 1024, 500);
+
+            // 1. Vibrant gradient - Orange → Blue → Teal
+            const gradient = ctx.createLinearGradient(0, 0, 1024, 500);
+            gradient.addColorStop(0, '#FF6B35');    // Orange
+            gradient.addColorStop(0.5, '#4A90E2');  // Blue
+            gradient.addColorStop(1, '#00CED1');    // Teal
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1024, 500);
+
+            // Add subtle noise/grain to prevent banding
+            const imageData = ctx.getImageData(0, 0, 1024, 500);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 8; // 3% noise
+                data[i] += noise;     // R
+                data[i + 1] += noise; // G
+                data[i + 2] += noise; // B
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            // NOW load and draw bolt AFTER the noise layer
+
+            // Load bolt image first, then draw everything
+            const boltImg = new Image();
+            boltImg.onload = function() {
+                // 4. Draw lightning bolt - oversized, blurred, like share card
+                ctx.save();
+                ctx.globalAlpha = 0.4;
+                ctx.filter = 'blur(15px)';
+                
+                const scale = 1.2;
+                const width = boltImg.width * scale;
+                const height = boltImg.height * scale;
+                
+                const x = -300;
+                const y = -550;
+                
+                ctx.drawImage(boltImg, x, y, width, height);
+                
+                ctx.restore();
+                
+                // 2. Main text: "Now." - LARGE and dominant
+                ctx.save();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+                ctx.shadowBlur = 32;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 8;
+                ctx.fillStyle = '#F5F5F5'; // Off-white
+                ctx.font = '700 200px Poppins';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Now.', 512, 200);
+                ctx.restore();
+
+                // 3. Subline: "Tiny resets. Together."
+                ctx.fillStyle = 'rgba(245, 245, 245, 0.75)';
+                ctx.font = '400 42px Poppins';
+                ctx.textAlign = 'center';
+                ctx.fillText('Tiny resets. Together.', 512, 310);
+            };
+            
+            boltImg.onerror = function() {
+                console.error('Failed to load bolt image');
+                // Draw text anyway if image fails
+                drawTextOnly();
+            };
+            
+            // HTML is in root, image is in lib/assets/
+            boltImg.src = './lib/assets/nowblitznobg.png';
+        }
+
+        function drawTextOnly() {
+            // Fallback if image doesn't load
+            ctx.filter = 'none';
+            
+            // 2. Main text: "Now." - LARGE and dominant
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+            ctx.shadowBlur = 32;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 8;
+            ctx.fillStyle = '#F5F5F5'; // Off-white
+            ctx.font = '700 200px Poppins';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Now.', 512, 200);
+            ctx.restore();
+
+            // 3. Subline: "Tiny resets. Together."
+            ctx.fillStyle = 'rgba(245, 245, 245, 0.82)';
+            ctx.font = '500 46px Poppins';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tiny resets. Together.', 512, 310);
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'now_feature_graphic_1024x500.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

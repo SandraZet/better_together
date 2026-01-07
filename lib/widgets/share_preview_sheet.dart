@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 import 'package:share_plus/share_plus.dart';
 import 'package:auto_size_text/auto_size_text.dart';
-import 'dart:typed_data';
+
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -80,11 +80,9 @@ class _SharePreviewSheetState extends State<SharePreviewSheet> {
       // Share the image
       if (!mounted) return;
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text:
-            'Micro-Actions together: \n"${widget.text}" \n NOW. 🚀\n\nBe part. Or not. ✨',
-      );
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: '"${widget.text}" \nNOW. 🚀\n\nBe part. Or not. ✨');
 
       // Clean up temporary file after sharing
       try {
