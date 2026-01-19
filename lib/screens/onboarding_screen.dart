@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:better_together/services/profanity_service.dart';
@@ -25,6 +26,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _line3Controller;
   late AnimationController _nowController;
 
+  // Animation controllers for Page 2
+  late AnimationController _page2Line1Controller;
+  late AnimationController _page2Line2Controller;
+  late AnimationController _page2Line3Controller;
+  late AnimationController _page2TextController;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +50,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       duration: const Duration(milliseconds: 800),
     );
     _nowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    // Page 2 controllers
+    _page2Line1Controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _page2Line2Controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _page2Line3Controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _page2TextController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
@@ -68,6 +93,28 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _nowController.forward();
   }
 
+  void _startPage2Animations() async {
+    // Reset controllers first
+    _page2Line1Controller.reset();
+    _page2Line2Controller.reset();
+    _page2Line3Controller.reset();
+    _page2TextController.reset();
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    _page2Line1Controller.forward();
+
+    await Future.delayed(const Duration(milliseconds: 1200));
+    _page2Line2Controller.forward();
+
+    await Future.delayed(const Duration(milliseconds: 1200));
+    _page2Line3Controller.forward();
+
+    await Future.delayed(const Duration(milliseconds: 800));
+    _page2TextController.forward();
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -77,6 +124,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _line2Controller.dispose();
     _line3Controller.dispose();
     _nowController.dispose();
+    _page2Line1Controller.dispose();
+    _page2Line2Controller.dispose();
+    _page2Line3Controller.dispose();
+    _page2TextController.dispose();
     super.dispose();
   }
 
@@ -149,21 +200,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   Future<void> _nextPage() async {
     // Check profanity before proceeding
-    if (_currentPage == 1) {
+    // Page 1 = index 0 (everyone), Page 2 = index 1 (value), Page 3 = index 2 (nickname), Page 4 = index 3 (location), Page 5 = index 4 (ready)
+    if (_currentPage == 2) {
       final success = await _saveNickname();
       if (!success) return; // Don't proceed if profanity found
     }
-    if (_currentPage == 2) {
+    if (_currentPage == 3) {
       final success = await _saveLocation();
       if (!success) return; // Don't proceed if profanity found
     }
 
-    if (_currentPage < 3) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
+      // Save hasSeenOnboarding flag when completing onboarding
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasSeenOnboarding', true);
+
+      if (kDebugMode) {
+        print(
+          '✅ hasSeenOnboarding set to: ${prefs.getBool('hasSeenOnboarding')}',
+        );
+      }
+
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => widget.nextScreen));
@@ -180,8 +242,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           setState(() {
             _currentPage = index;
           });
+          if (index == 1) {
+            _startPage2Animations();
+          }
         },
-        children: [_buildPage1(), _buildPage2(), _buildPage3(), _buildPage4()],
+        children: [
+          _buildPage1(),
+          _buildNewPage2(),
+          _buildPage3(),
+          _buildPage4(),
+          _buildPage5(),
+        ],
       ),
     );
   }
@@ -189,71 +260,106 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget _buildPage1() {
     return Container(
       color: Colors.black,
-      child: Column(
+      child: Stack(
         children: [
-          Expanded(
-            child: Center(
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: 80),
-                  _buildAnimatedStrikethroughText(
-                    'act',
-                    'scroll',
-                    _line1Controller,
+                  AnimatedBuilder(
+                    animation: _line1Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _line1Controller.value,
+                        child: Text(
+                          "Everyone.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                32 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 24),
-                  _buildAnimatedStrikethroughText(
-                    'feel',
-                    'follow',
-                    _line2Controller,
+                  SizedBox(
+                    height: 16 * MediaQuery.of(context).size.width / 400,
                   ),
-                  const SizedBox(height: 24),
-                  _buildAnimatedStrikethroughText(
-                    'together',
-                    'alone',
-                    _line3Controller,
+                  AnimatedBuilder(
+                    animation: _line2Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _line2Controller.value,
+                        child: Text(
+                          "Same micro-action.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                32 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 80),
+                  SizedBox(
+                    height: 16 * MediaQuery.of(context).size.width / 400,
+                  ),
+                  AnimatedBuilder(
+                    animation: _line3Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _line3Controller.value,
+                        child: Text(
+                          "Same moment.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                32 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: 48 * MediaQuery.of(context).size.width / 400,
+                  ),
                   AnimatedBuilder(
                     animation: _nowController,
                     builder: (context, child) {
                       return Opacity(
                         opacity: _nowController.value,
-                        child: Column(
-                          children: [
-                            ShaderMask(
-                              shaderCallback: (bounds) => LinearGradient(
-                                colors: [
-                                  Colors.pink.shade300,
-                                  Colors.purple.shade300,
-                                  Colors.blue.shade300,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: Text(
-                                'connected as equals',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                  color: Colors.white,
-                                  fontStyle: FontStyle.italic,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              Colors.pink.shade300,
+                              Colors.purple.shade300,
+                              Colors.blue.shade300,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: Text(
+                            'No feeds. No algorithm. Just now.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize:
+                                  18 * MediaQuery.of(context).size.width / 400,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontStyle: FontStyle.italic,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Now.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.7,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       );
                     },
@@ -262,21 +368,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 60),
-            child: GestureDetector(
-              onTap: _nextPage,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 24,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 60),
+              child: GestureDetector(
+                onTap: _nextPage,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
@@ -286,7 +395,256 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPage2() {
+  // Widget _buildOldPage1() {
+  //   return Container(
+  //     color: Colors.black,
+  //     child: Column(
+  //       children: [
+  //         Expanded(
+  //           child: Center(
+  //             child: Column(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 SizedBox(height: 80),
+  //                 _buildAnimatedStrikethroughText(
+  //                   'act',
+  //                   'scroll',
+  //                   _line1Controller,
+  //                 ),
+  //                 SizedBox(
+  //                   height: 24 * MediaQuery.of(context).size.width / 400,
+  //                 ),
+  //                 _buildAnimatedStrikethroughText(
+  //                   'feel',
+  //                   'follow',
+  //                   _line2Controller,
+  //                 ),
+  //                 SizedBox(
+  //                   height: 24 * MediaQuery.of(context).size.width / 400,
+  //                 ),
+  //                 _buildAnimatedStrikethroughText(
+  //                   'together',
+  //                   'alone',
+  //                   _line3Controller,
+  //                 ),
+  //                 const SizedBox(height: 80),
+  //                 AnimatedBuilder(
+  //                   animation: _nowController,
+  //                   builder: (context, child) {
+  //                     return Opacity(
+  //                       opacity: _nowController.value,
+  //                       child: Column(
+  //                         children: [
+  //                           ShaderMask(
+  //                             shaderCallback: (bounds) => LinearGradient(
+  //                               colors: [
+  //                                 Colors.pink.shade300,
+  //                                 Colors.purple.shade300,
+  //                                 Colors.blue.shade300,
+  //                               ],
+  //                               begin: Alignment.topLeft,
+  //                               end: Alignment.bottomRight,
+  //                             ).createShader(bounds),
+  //                             child: Text(
+  //                               'connected as equals',
+  //                               style: GoogleFonts.poppins(
+  //                                 fontSize:
+  //                                     16 *
+  //                                     MediaQuery.of(context).size.width /
+  //                                     400,
+  //                                 fontWeight: FontWeight.w400,
+  //                                 color: Colors.white,
+  //                                 fontStyle: FontStyle.italic,
+  //                                 letterSpacing: 0.5,
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(height: 8),
+  //                           Text(
+  //                             'Now.',
+  //                             style: GoogleFonts.poppins(
+  //                               fontSize:
+  //                                   32 *
+  //                                   MediaQuery.of(context).size.width /
+  //                                   400,
+  //                               fontWeight: FontWeight.w800,
+  //                               color: Colors.white,
+  //                               letterSpacing: 0.7,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   },
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //         Padding(
+  //           padding: const EdgeInsets.only(bottom: 60),
+  //           child: GestureDetector(
+  //             onTap: _nextPage,
+  //             child: Container(
+  //               width: 60,
+  //               height: 60,
+  //               decoration: const BoxDecoration(
+  //                 shape: BoxShape.circle,
+  //                 color: Colors.transparent,
+  //               ),
+  //               child: const Icon(
+  //                 Icons.arrow_forward_ios,
+  //                 color: Colors.white,
+  //                 size: 24,
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Widget _buildNewPage2() {
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _page2Line1Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _page2Line1Controller.value,
+                        child: Text(
+                          "No streaks.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                28 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: 12 * MediaQuery.of(context).size.width / 400,
+                  ),
+                  AnimatedBuilder(
+                    animation: _page2Line2Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _page2Line2Controller.value,
+                        child: Text(
+                          "No comparison.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                28 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: 12 * MediaQuery.of(context).size.width / 400,
+                  ),
+                  AnimatedBuilder(
+                    animation: _page2Line3Controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _page2Line3Controller.value,
+                        child: Text(
+                          "No obligation.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                28 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: 48 * MediaQuery.of(context).size.width / 400,
+                  ),
+                  AnimatedBuilder(
+                    animation: _page2TextController,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _page2TextController.value,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              Colors.pink.shade300,
+                              Colors.purple.shade300,
+                              Colors.blue.shade300,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: Text(
+                            'One tiny action, when you feel like it.\nWith others. Anonymous. Worldwide.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize:
+                                  18 * MediaQuery.of(context).size.width / 400,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontStyle: FontStyle.italic,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 60),
+              child: GestureDetector(
+                onTap: _nextPage,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage3() {
     return Container(
       color: Colors.black,
       child: Stack(
@@ -304,9 +662,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         'Choose your 90s ',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
+                          fontSize:
+                              28 * MediaQuery.of(context).size.width / 400,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
+                          height: 1.2,
                         ),
                       ),
                     ],
@@ -318,25 +678,58 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         'Nickname.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
+                          fontSize:
+                              28 * MediaQuery.of(context).size.width / 400,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 32 * MediaQuery.of(context).size.width / 400,
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'This is us - a tiny crowd doing the same thing at the same moment. Your ideas shape what we all do.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withOpacity(0.7),
-                        height: 1.5,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Don\'t worry. It\'s not a profile.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                18 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.85),
+                            height: 1.5,
+                          ),
+                        ),
+                        Text(
+                          'It\'s just a nickname.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                18 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.55),
+                            height: 1.5,
+                          ),
+                        ),
+                        // SizedBox(
+                        //   height: 16 * MediaQuery.of(context).size.width / 400,
+                        // ),
+                        // Text(
+                        //   'You\'ll see who else is here with you.',
+                        //   textAlign: TextAlign.center,
+                        //   style: GoogleFonts.poppins(
+                        //     fontSize:
+                        //         14 * MediaQuery.of(context).size.width / 400,
+                        //     fontWeight: FontWeight.w400,
+                        //     color: Colors.white.withOpacity(0.6),
+                        //     height: 1.5,
+                        //   ),
+                        // ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -344,7 +737,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     controller: _nicknameController,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: 18 * MediaQuery.of(context).size.width / 400,
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
@@ -353,7 +746,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       fillColor: Colors.white,
                       hintText: 'sk8tergirl92 • BladeRunner_X',
                       hintStyle: GoogleFonts.poppins(
-                        fontSize: 18,
+                        fontSize: 18 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w500,
                         foreground: Paint()
                           ..shader = const LinearGradient(
@@ -393,12 +786,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 12 * MediaQuery.of(context).size.width / 400,
+                  ),
                   Text(
                     'Not feeling creative right now? Leave it empty.\nYou can always change it in settings.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 13,
+                      fontSize: 13 * MediaQuery.of(context).size.width / 400,
                       fontWeight: FontWeight.w400,
                       color: Colors.white.withOpacity(0.5),
                       height: 1.4,
@@ -437,7 +832,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPage3() {
+  Widget _buildPage4() {
     return Container(
       color: Colors.black,
       child: Stack(
@@ -455,7 +850,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         'Where are you  ',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
+                          fontSize:
+                              28 * MediaQuery.of(context).size.width / 400,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
@@ -469,33 +865,38 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         'from?',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
+                          fontSize:
+                              28 * MediaQuery.of(context).size.width / 400,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 32 * MediaQuery.of(context).size.width / 400,
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'Let us know your city or country - so we can see how far this moment reaches.',
+                      'So we can see how far\nthis moment reaches.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w500,
                         color: Colors.white.withOpacity(0.7),
                         height: 1.5,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  SizedBox(
+                    height: 48 * MediaQuery.of(context).size.width / 400,
+                  ),
                   TextField(
                     controller: _locationController,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: 18 * MediaQuery.of(context).size.width / 400,
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
@@ -504,7 +905,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       fillColor: Colors.white,
                       hintText: 'Vienna • Tokyo • Chile',
                       hintStyle: GoogleFonts.poppins(
-                        fontSize: 18,
+                        fontSize: 18 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.withOpacity(0.6),
                       ),
@@ -535,6 +936,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
                   ),
+                  SizedBox(
+                    height: 12 * MediaQuery.of(context).size.width / 400,
+                  ),
+                  Text(
+                    'Optional. You can skip this or change it later.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13 * MediaQuery.of(context).size.width / 400,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withOpacity(0.5),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -567,7 +982,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPage4() {
+  Widget _buildPage5() {
     return Container(
       color: Colors.black,
       child: Center(
@@ -580,39 +995,39 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 'READY?',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
-                  fontSize: 52,
+                  fontSize: 48 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  letterSpacing: 3,
+                  letterSpacing: 2,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32 * MediaQuery.of(context).size.width / 400),
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Three mini-actions each day\n',
+                      text: 'Interrupt your scroll.\n',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.7),
                         height: 1.6,
                       ),
                     ),
                     TextSpan(
-                      text: 'to interrupt your mind and\n',
+                      text: 'Break your loop.\n',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.7),
                         height: 1.6,
                       ),
                     ),
                     TextSpan(
-                      text: 'give you a moment just for you.\n\n',
+                      text: 'Feel something real.\n\n',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.7),
                         height: 1.6,
@@ -622,7 +1037,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     TextSpan(
                       text: "You can't fake it to feel it.",
                       style: GoogleFonts.poppins(
-                        fontSize: 18,
+                        fontSize: 18 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w500,
                         foreground: Paint()
                           ..shader = const LinearGradient(
@@ -641,7 +1056,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 52),
+              SizedBox(height: 52 * MediaQuery.of(context).size.width / 400),
               GestureDetector(
                 onTap: _nextPage,
                 child: Container(
@@ -660,7 +1075,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: Text(
                     'Go!',
                     style: GoogleFonts.poppins(
-                      fontSize: 32,
+                      fontSize: 32 * MediaQuery.of(context).size.width / 400,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
@@ -674,101 +1089,102 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildAnimatedStrikethroughText(
-    String mainText,
-    String crossedText,
-    AnimationController controller,
-  ) {
-    // First half: right text fades in with strikethrough
-    // Second half: left text fades in
-    final rightAnimation = Interval(0.0, 0.5, curve: Curves.easeInOut);
-    final leftAnimation = Interval(0.5, 1.0, curve: Curves.easeInOut);
+  // Widget _buildAnimatedStrikethroughText(
+  //   String mainText,
+  //   String crossedText,
+  //   AnimationController controller,
+  // ) {
+  //   // First half: right text fades in with strikethrough
+  //   // Second half: left text fades in
+  //   final rightAnimation = Interval(0.0, 0.5, curve: Curves.easeInOut);
+  //   final leftAnimation = Interval(0.5, 1.0, curve: Curves.easeInOut);
 
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        final rightProgress = rightAnimation.transform(controller.value);
-        final leftProgress = leftAnimation.transform(controller.value);
+  //   return AnimatedBuilder(
+  //     animation: controller,
+  //     builder: (context, child) {
+  //       final rightProgress = rightAnimation.transform(controller.value);
+  //       final leftProgress = leftAnimation.transform(controller.value);
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Left text - fades in AFTER right text (second half)
-            SizedBox(
-              width: 120,
-              child: Opacity(
-                opacity: leftProgress,
-                child: Transform.translate(
-                  offset: Offset(0, 8 * (1 - leftProgress)),
-                  child: Text(
-                    mainText,
-                    textAlign: TextAlign.right,
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 24),
-            // Right text - fades to 50% opacity with strikethrough FIRST
-            SizedBox(
-              width: 120,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Opacity(
-                      opacity: rightProgress * 0.5,
-                      child: Text(
-                        crossedText,
-                        textAlign: TextAlign.left,
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Calculate text width
-                            final textPainter = TextPainter(
-                              text: TextSpan(
-                                text: crossedText,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              textDirection: TextDirection.ltr,
-                            )..layout();
+  //       return Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           // Left text - fades in AFTER right text (second half)
+  //           SizedBox(
+  //             width: 120,
+  //             child: Opacity(
+  //               opacity: leftProgress,
+  //               child: Transform.translate(
+  //                 offset: Offset(0, 8 * (1 - leftProgress)),
+  //                 child: Text(
+  //                   mainText,
+  //                   textAlign: TextAlign.right,
+  //                   style: GoogleFonts.poppins(
+  //                     fontSize: 24 * MediaQuery.of(context).size.width / 400,
+  //                     fontWeight: FontWeight.w700,
+  //                     color: Colors.white,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(width: 24),
+  //           // Right text - fades to 50% opacity with strikethrough FIRST
+  //           SizedBox(
+  //             width: 120,
+  //             child: Align(
+  //               alignment: Alignment.centerLeft,
+  //               child: Stack(
+  //                 clipBehavior: Clip.none,
+  //                 children: [
+  //                   Opacity(
+  //                     opacity: rightProgress * 0.5,
+  //                     child: Text(
+  //                       crossedText,
+  //                       textAlign: TextAlign.left,
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize:
+  //                             22 * MediaQuery.of(context).size.width / 400,
+  //                         fontWeight: FontWeight.w700,
+  //                         color: Colors.white,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   Positioned(
+  //                     left: 0,
+  //                     top: 0,
+  //                     bottom: 0,
+  //                     child: Align(
+  //                       alignment: Alignment.centerLeft,
+  //                       child: LayoutBuilder(
+  //                         builder: (context, constraints) {
+  //                           // Calculate text width
+  //                           final textPainter = TextPainter(
+  //                             text: TextSpan(
+  //                               text: crossedText,
+  //                               style: GoogleFonts.poppins(
+  //                                 fontSize: 22,
+  //                                 fontWeight: FontWeight.w700,
+  //                               ),
+  //                             ),
+  //                             textDirection: TextDirection.ltr,
+  //                           )..layout();
 
-                            return Container(
-                              height: 1.4,
-                              width: textPainter.width * rightProgress,
-                              color: Colors.white.withOpacity(0.7),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  //                           return Container(
+  //                             height: 1.4,
+  //                             width: textPainter.width * rightProgress,
+  //                             color: Colors.white.withOpacity(0.7),
+  //                           );
+  //                         },
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 }
