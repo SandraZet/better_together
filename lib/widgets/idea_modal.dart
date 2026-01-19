@@ -60,16 +60,16 @@ class _IdeaModalState extends State<IdeaModal> {
               Text(
                 'Thanks!',
                 style: GoogleFonts.poppins(
-                  fontSize: 36,
+                  fontSize: 36 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w900,
                   color: Colors.black,
                 ),
               ),
-              const Text(
+              Text(
                 'You are awesome!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18 * MediaQuery.of(context).size.width / 400,
                   color: Colors.black54,
                   fontWeight: FontWeight.w400,
                 ),
@@ -86,7 +86,7 @@ class _IdeaModalState extends State<IdeaModal> {
           Text(
             'Got a micro-action\nothers might love?',
             style: GoogleFonts.poppins(
-              fontSize: 24,
+              fontSize: 24 * MediaQuery.of(context).size.width / 400,
               fontWeight: FontWeight.w900,
               color: Colors.black,
               height: 1.2,
@@ -96,13 +96,13 @@ class _IdeaModalState extends State<IdeaModal> {
           Text(
             'Ideas you submit may be gently edited to match the NOW.style.',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14 * MediaQuery.of(context).size.width / 400,
               fontWeight: FontWeight.w400,
               color: Colors.black.withOpacity(0.4),
             ),
             //textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24 * MediaQuery.of(context).size.width / 400),
           TextField(
             controller: _ideaController,
             maxLines: 4,
@@ -118,7 +118,7 @@ class _IdeaModalState extends State<IdeaModal> {
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
           if (_initialNickname == 'tom' || _initialNickname.isEmpty) ...[
             TextField(
               controller: _nicknameController,
@@ -137,7 +137,7 @@ class _IdeaModalState extends State<IdeaModal> {
                 _nickname = val.trim();
               },
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8 * MediaQuery.of(context).size.width / 400),
           ],
           if (_isLoadingPrefs || _initialLocation.isEmpty) ...[
             TextField(
@@ -154,7 +154,7 @@ class _IdeaModalState extends State<IdeaModal> {
                 contentPadding: const EdgeInsets.all(16),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
           ],
           ElevatedButton(
             onPressed: () async {
@@ -255,9 +255,12 @@ class _IdeaModalState extends State<IdeaModal> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Send',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 18 * MediaQuery.of(context).size.width / 400,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

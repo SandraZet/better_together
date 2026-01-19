@@ -172,7 +172,7 @@ class _SupporterModalState extends State<SupporterModal> {
               Text(
                 'Support',
                 style: GoogleFonts.poppins(
-                  fontSize: 24,
+                  fontSize: 24 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w900,
                   color: Colors.black,
                   height: 1.2,
@@ -184,7 +184,7 @@ class _SupporterModalState extends State<SupporterModal> {
               Text(
                 'Be part and make Now. awesome for everyone.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w400,
                   color: Colors.black.withOpacity(0.4),
                 ),
@@ -209,7 +209,7 @@ class _SupporterModalState extends State<SupporterModal> {
                       'No supporter options available',
                       style: GoogleFonts.poppins(
                         color: Colors.black54,
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                       ),
                     ),
                   ),
@@ -232,7 +232,7 @@ class _SupporterModalState extends State<SupporterModal> {
                       'For Brands',
                       style: GoogleFonts.poppins(
                         color: Colors.black,
-                        fontSize: 16,
+                        fontSize: 16 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -241,7 +241,7 @@ class _SupporterModalState extends State<SupporterModal> {
                       'If you want to support a moment get in touch:',
                       style: TextStyle(
                         color: Colors.black.withOpacity(0.6),
-                        fontSize: 12,
+                        fontSize: 12 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -250,7 +250,7 @@ class _SupporterModalState extends State<SupporterModal> {
                       'now.globalresets@gmail.com',
                       style: GoogleFonts.poppins(
                         color: Colors.black,
-                        fontSize: 13,
+                        fontSize: 13 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -260,14 +260,13 @@ class _SupporterModalState extends State<SupporterModal> {
 
               const SizedBox(height: 16),
 
-              // Restore purchases button
               TextButton(
                 onPressed: _isLoading ? null : _restorePurchases,
                 child: Text(
                   'Restore Purchases',
                   style: GoogleFonts.poppins(
                     color: Colors.black.withOpacity(0.6),
-                    fontSize: 14,
+                    fontSize: 14 * MediaQuery.of(context).size.width / 400,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -340,7 +339,10 @@ class _SupporterModalState extends State<SupporterModal> {
                               displayTitle,
                               style: GoogleFonts.poppins(
                                 color: Colors.black87,
-                                fontSize: 18,
+                                fontSize:
+                                    18 *
+                                    MediaQuery.of(context).size.width /
+                                    400,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -349,7 +351,10 @@ class _SupporterModalState extends State<SupporterModal> {
                               package.storeProduct.description,
                               style: GoogleFonts.poppins(
                                 color: Colors.black54,
-                                fontSize: 14,
+                                fontSize:
+                                    14 *
+                                    MediaQuery.of(context).size.width /
+                                    400,
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -361,7 +366,8 @@ class _SupporterModalState extends State<SupporterModal> {
                         package.storeProduct.priceString,
                         style: GoogleFonts.poppins(
                           color: Colors.black,
-                          fontSize: 20,
+                          fontSize:
+                              20 * MediaQuery.of(context).size.width / 400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

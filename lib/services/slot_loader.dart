@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,7 +84,18 @@ class SlotLoader {
     print('🔍 Loading slot: $docId (date: $date, slot: $slot)');
 
     try {
-      final snap = await _db.collection('slots').doc(docId).get();
+      // Add timeout to prevent infinite loading
+      final snap = await _db
+          .collection('slots')
+          .doc(docId)
+          .get()
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              print('⏱️ Timeout loading slot document');
+              throw TimeoutException('Failed to load slot data');
+            },
+          );
 
       if (!snap.exists) {
         print('❌ Document $docId does NOT exist in Firestore');
@@ -94,6 +106,7 @@ class SlotLoader {
           'submittedBy': '',
           'location': '',
           'sponsoredBy': '',
+          'sponsorUrl': '',
           'completions': 0,
           'slot': slot,
           'date': date,
@@ -109,9 +122,26 @@ class SlotLoader {
       // load task doc if exists
       Map<String, dynamic> taskData = {};
       if (taskId.isNotEmpty) {
-        final tSnap = await _db.collection('tasks').doc(taskId).get();
-        if (tSnap.exists) {
-          taskData = tSnap.data()!;
+        try {
+          final tSnap = await _db
+              .collection('tasks')
+              .doc(taskId)
+              .get()
+              .timeout(const Duration(seconds: 10));
+          if (tSnap.exists) {
+            taskData = tSnap.data()!;
+            print('✅ Found task data: headline="${taskData['headline']}"');
+          } else {
+            print('⚠️ Task document $taskId not found');
+          }
+        } on TimeoutException {
+          print('⏱️ Timeout loading task document - continuing with slot data');
+          // taskData bleibt leer, wir nutzen nur slot data
+        } catch (e) {
+          print(
+            '⚠️ Error loading task document: $e - continuing with slot data',
+          );
+          // taskData bleibt leer
         }
       }
 
@@ -120,7 +150,7 @@ class SlotLoader {
           ? rawNicknames.map((e) => e.toString()).toList()
           : <String>[];
 
-      return {
+      final result = {
         'taskId': taskId,
         'headline': taskData['headline'] ?? slotData['headline'] ?? '',
         'subline': taskData['subline'] ?? '',
@@ -134,6 +164,9 @@ class SlotLoader {
         'date': date,
         'nicknames': nicknames,
       };
+
+      print('✅ Returning merged data with headline="${result['headline']}"');
+      return result;
     } catch (e) {
       print('❌ Error loading slot: $e');
       rethrow; // Fehler weiterwerfen, damit slot_screen.dart ihn abfangen kann

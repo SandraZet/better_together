@@ -1,6 +1,8 @@
+import 'package:better_together/debug_prefs.dart';
 import 'package:better_together/services/slot_loader.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,6 +52,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   bool _showPlusOne = false;
   bool _isLoading = true;
   bool _isOffline = false;
+  bool _showCloseButton = false;
 
   final TextEditingController _ideaController = TextEditingController();
 
@@ -83,7 +86,20 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    // Initialize gradient colors immediately to prevent black screen
+    _slot = _slotLoader.getCurrentSlotName();
+    _gradientColors = _calculateGradientColors(_slot);
+
     _setupAnimations();
+
+    // Start fade-in immediately as fallback
+    // Will be called again in _loadSlotAndTask, but that's safe
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted && !_fadeInController.isAnimating) {
+        _fadeInController.forward();
+      }
+    });
+
     _loadSlotAndTask();
   }
 
@@ -92,29 +108,38 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   // ================================================================
   Future<void> _loadSlotAndTask() async {
     try {
+      print('🚀 Starting _loadSlotAndTask...');
       final data = await _slotLoader.loadCurrentSlotTask();
       print(
-        'DEBUG: date=${data['date']}, slot=${data['slot']}, taskId=${data['taskId']}, location=${data['location']}',
+        '✅ Loaded data: date=${data['date']}, slot=${data['slot']}, taskId=${data['taskId']}, headline="${data['headline']}", location=${data['location']}',
       );
 
       // load nickname
       final prefs = await SharedPreferences.getInstance();
       final nickname = prefs.getString('nickname') ?? 'tom';
+      print('✅ Loaded nickname: $nickname');
 
       // check if done
       final isDone = await _slotLoader.isCurrentSlotDone();
+      print('✅ isDone: $isDone');
+
+      // Validate that we have essential data
+      if (data['headline'] == null ||
+          data['headline'].toString().trim().isEmpty) {
+        print('⚠️ WARNING: Empty headline detected! Full data: $data');
+      }
 
       setState(() {
         _slot = data['slot'];
         _taskId = data['taskId'] ?? '';
-        _headline = data['headline'];
+        _headline = data['headline'] ?? 'No task available';
 
-        _text = data['text'];
-        _submittedBy = data['submittedBy'];
-        _sponsoredBy = data['sponsoredBy'];
+        _text = data['text'] ?? '';
+        _submittedBy = data['submittedBy'] ?? '';
+        _sponsoredBy = data['sponsoredBy'] ?? '';
         _sponsorUrl = data['sponsorUrl'] ?? '';
-        _location = data['location'];
-        _counter = data['completions'];
+        _location = data['location'] ?? '';
+        _counter = data['completions'] ?? 0;
         _nicknames = List<String>.from(
           (data['nicknames'] as List?) ?? <String>[],
         );
@@ -126,14 +151,22 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         // Gradient-Farben einmalig berechnen
         _gradientColors = _calculateGradientColors(_slot);
       });
-    } catch (e) {
+
+      print(
+        '✅ State updated successfully. _headline="$_headline", _isLoading=$_isLoading',
+      );
+    } catch (e, stackTrace) {
       print('❌ Error loading task: $e');
+      print('❌ Stack trace: $stackTrace');
       setState(() {
         _isLoading = false;
         _isOffline = true;
         _slot = 'morning'; // default for gradient colors
         _gradientColors = _calculateGradientColors('morning');
       });
+
+      // WICHTIG: Fade-in auch bei Fehler starten, sonst bleibt Screen schwarz!
+      _fadeInController.forward();
       return;
     }
 
@@ -247,79 +280,85 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   Future<void> _botAutoComplete() async {
     // Generate random nickname
     final randomNames = [
-      'alex',
-      'sam',
-      'jordan',
-      'taylor',
-      'casey',
-      'riley',
-      'morgan',
-      'avery',
-      'quinn',
-      'charlie',
-      'drew',
-      'jamie',
-      'kai',
-      'skyler',
-      'phoenix',
-      'river',
-      'sage',
-      'rowan',
-      'finley',
-      'Dakota',
-      'emerson',
-      'hayden',
-      'justice',
-      'lennon',
-      'marley',
-      'navy',
-      'oakley',
-      'parker',
-      'rebel',
-      'scout',
-      'tatum',
-      'winter',
-      'zion',
-      'ash',
-      'blue',
-      'cloud',
-      'max_99',
-      'anna_22',
-      'leo_7',
-      'mia_11',
-      'tim_42',
-      'lisa_88',
-      'ben_5',
-      'nina_13',
-      'tom_777',
-      'emma_1',
-      'paul_21',
-      'lara_55',
+      'bettina85',
+      'sandra82',
+      'jux80',
+      'marina90',
+      'sebi22',
+      'micha87',
+      'julia93',
+      'thommy89',
+      'kathi91',
+      'andi_84',
+      'sarah92',
+      'steff86',
+      'dani90',
+      'michi85',
+      'verena88',
+      'alex94',
+      'claudia83',
+      'marco91',
+      'nici89',
+      'flo_92',
+      'susi87',
+      'chris90',
+      'tanja85',
+      'max88',
+      'steffi91',
+      'hansi86',
+      'lisi93',
+      'philip89',
+      'manu_87',
+      'kerstin92',
+      'rene88',
+      'bianca90',
+      'lukas85',
+      'yvonne91',
+      'dominik93',
+      'melanie86',
+      'markus89',
+      'nicole_84',
+      'patrick92',
+      'sabrina88',
+      'clemens90',
+      'jasmin87',
+      'tobi91',
+      'sonja85',
+      'daniel93',
+      'alpenrose',
+      'bergfex_92',
+      'wienerblut88',
+      'donaunixe',
+      'edelweiss91',
+      'sachertorte_fan',
+      'mozartkugel',
+      'bergkristall89',
+      'almrausch',
+      'heurigengeist',
+      'kaiserschmarrn_lover',
+      'lipizzaner93',
+      'kaffeehaus_poet',
+      'schneehaeschen',
     ];
     final randomNickname = (randomNames..shuffle()).first;
 
     // Generate random location
     final randomLocations = [
       'vienna',
+      'wien',
       'austria',
-      'tokyo',
-      'bgld',
-      'grimmenstein',
+      'österreich',
+      'styria',
+      'steiermark',
       'salzburg',
-      'tulln',
-      'linz',
-      'graz',
-      'innsbruck',
-      'klagenfurt',
-      'berlin',
-      'paris',
-      'london',
-      'madrid',
-      'rome',
-      'bangkok',
-      'vienna',
-      'mumbai',
-      'sydney',
+      'oberösterreich',
+      'tirol',
+      'kärnten',
+      'vorarlberg',
+      'burgenland',
+      'niederösterreich',
+      'wachau',
+      'salzkammergut',
     ];
     final randomLocation = (randomLocations..shuffle()).first;
 
@@ -400,6 +439,15 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
         _boltTransitionController.forward();
+      }
+    });
+
+    // Show close button after bolt animation completes (4.5s animation + 1.2s delay)
+    Future.delayed(const Duration(milliseconds: 6000), () {
+      if (mounted) {
+        setState(() {
+          _showCloseButton = true;
+        });
       }
     });
 
@@ -542,14 +590,16 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leadingWidth: 80,
+        leadingWidth: MediaQuery.of(context).size.width / 5,
         leading: FadeTransition(
           opacity: _fadeInAnimation,
           child: GestureDetector(
             onTap: _showLegalInfo,
             behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: const EdgeInsets.only(left: 16),
+              padding: EdgeInsets.only(
+                left: MediaQuery.of(context).size.width / 25,
+              ),
               alignment: Alignment.centerLeft,
               child: Text(
                 'Now.',
@@ -557,7 +607,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                   color: _slot == 'night'
                       ? Colors.white.withOpacity(0.35)
                       : Colors.white,
-                  fontSize: 20,
+                  fontSize: MediaQuery.of(context).size.width / 20,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
                 ),
@@ -573,13 +623,27 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                   _fmt(_remainingSeconds),
                   style: GoogleFonts.poppins(
                     color: _slot == 'night' ? Colors.black87 : Colors.black87,
-                    fontSize: 17,
+                    fontSize: MediaQuery.of(context).size.width / 23.5,
                     letterSpacing: 0.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
         actions: [
+          if (_showCloseButton)
+            IconButton(
+              icon: Icon(
+                Icons.close,
+                color: _slot == 'night'
+                    ? const Color(0xFFE5E0EA)
+                    : Colors.white,
+                size: MediaQuery.of(context).size.width / 16.7,
+              ),
+              onPressed: () async {
+                // Minimize app to background
+                SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+              },
+            ),
           FadeTransition(
             opacity: _fadeInAnimation,
             child: InkWell(
@@ -659,20 +723,20 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(width: 8),
-          // IconButton(
-          //   icon: Icon(
-          //     Icons.bug_report,
-          //     color: _slot == 'night' ? const Color(0xFFE5E0EA) : Colors.white,
-          //     size: 20,
-          //   ),
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (_) => const DebugPrefsScreen()),
-          //     );
-          //   },
-          // ),
-          // const SizedBox(width: 8),
+          /* IconButton(
+            icon: Icon(
+              Icons.bug_report,
+              color: _slot == 'night' ? const Color(0xFFE5E0EA) : Colors.white,
+              size: 20,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DebugPrefsScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8), */
         ],
       ),
 
@@ -759,9 +823,9 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         ),
       ),
 
-      // ================================================================
-      // DEBUG: Bot Auto-Complete Button (COMMENT OUT BEFORE RELEASE)
-      // ================================================================
+      //================================================================
+      //DEBUG: Bot Auto-Complete Button (COMMENT OUT BEFORE RELEASE)
+      //================================================================
       // floatingActionButton: FloatingActionButton(
       //   onPressed: _botAutoComplete,
       //   backgroundColor: Colors.purple.withOpacity(0.8),
@@ -841,6 +905,15 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildGradientBackground({required Widget child}) {
+    // Ensure we always have colors to display
+    final colors = _gradientColors.isEmpty
+        ? [
+            const Color(0xFFFFE5B4),
+            const Color(0xFFFFB6C1),
+            const Color(0xFF87CEEB),
+          ]
+        : _gradientColors;
+
     return FadeTransition(
       opacity: _fadeInAnimation,
       child: Stack(
@@ -853,9 +926,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: _gradientColors.isEmpty
-                    ? [Colors.black, Colors.black, Colors.black]
-                    : _gradientColors,
+                colors: colors,
               ),
             ),
             child: child,
@@ -887,8 +958,32 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   // SLOT VIEW (headline, text, bolt…)
   // ================================================================
   Widget _buildActiveView() {
+    print(
+      '🖼️ _buildActiveView called: _isLoading=$_isLoading, _isOffline=$_isOffline, _headline="$_headline"',
+    );
+
     if (_isLoading) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Colors.white.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Loading...',
+              style: GoogleFonts.poppins(
+                fontSize: 20 * MediaQuery.of(context).size.width / 400,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     // Show friendly offline message
@@ -906,7 +1001,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             Text(
               'No internet connection',
               style: GoogleFonts.poppins(
-                fontSize: 32,
+                fontSize: 32 * MediaQuery.of(context).size.width / 400,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
@@ -916,7 +1011,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               'Please check your internet\nand try again',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18 * MediaQuery.of(context).size.width / 400,
                 color: Colors.white.withOpacity(0.7),
                 height: 1.4,
               ),
@@ -948,6 +1043,65 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       );
     }
 
+    // Check if we have valid content
+    if (_headline.isEmpty ||
+        _headline == 'No task' ||
+        _headline == 'No task available') {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 80,
+              color: Colors.white.withOpacity(0.6),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No task yet',
+              style: GoogleFonts.poppins(
+                fontSize: 32 * MediaQuery.of(context).size.width / 400,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Check back later for\ntoday\'s challenge',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18 * MediaQuery.of(context).size.width / 400,
+                color: Colors.white.withOpacity(0.7),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _loadSlotAndTask();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Refresh',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return FadeTransition(
       opacity: _fadeInAnimation,
       child: Column(
@@ -967,7 +1121,10 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       child: AutoSizeText(
                         _headline,
                         style: GoogleFonts.poppins(
-                          fontSize: _slot == 'night' ? 50 : 58,
+                          fontSize:
+                              (_slot == 'night' ? 50 : 58) *
+                              MediaQuery.of(context).size.width /
+                              400,
                           fontWeight: FontWeight.w900,
                           color: _slot == 'night'
                               ? const Color(0xFFE5E0EA)
@@ -975,7 +1132,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                           height: 1.1,
                         ),
                         maxLines: 3,
-                        minFontSize: 24,
+                        minFontSize: 20,
                         overflow: TextOverflow.visible,
                         wrapWords: false,
                       ),
@@ -1027,7 +1184,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             ],
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
 
           FadeTransition(
             opacity: _textFadeOut,
@@ -1037,13 +1194,13 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                 color: _slot == 'night'
                     ? const Color(0xFFE5E0EA).withOpacity(0.5)
                     : Colors.black.withOpacity(0.6),
-                fontSize: 22,
+                fontSize: 22 * MediaQuery.of(context).size.width / 400,
                 fontWeight: FontWeight.w400,
                 height: 1.4,
               ),
             ),
           ),
-          const SizedBox(height: 44),
+          SizedBox(height: 44 * MediaQuery.of(context).size.width / 400),
 
           FadeTransition(opacity: _textFadeOut, child: _buildSubmittedBy()),
 
@@ -1051,228 +1208,259 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
           // AnimatedCrossFade: Button → Done Message
           Center(
-            child: AnimatedCrossFade(
-              firstChild: _slot == 'night'
-                  ? Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Glow layers - multiple for softer effect
-                        Positioned(
-                          child: Container(
-                            width: 200,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(40),
-                              gradient: RadialGradient(
-                                colors: [
-                                  const Color(0xFFE5E0EA).withOpacity(0.15),
-                                  const Color(0xFFE5E0EA).withOpacity(0.05),
-                                  Colors.transparent,
-                                ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: AnimatedCrossFade(
+                firstChild: _slot == 'night'
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Glow layers - multiple for softer effect
+                          Positioned(
+                            child: Container(
+                              width: 200,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(40),
+                                gradient: RadialGradient(
+                                  colors: [
+                                    const Color(0xFFE5E0EA).withOpacity(0.15),
+                                    const Color(0xFFE5E0EA).withOpacity(0.05),
+                                    Colors.transparent,
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        // Button
-                        ElevatedButton(
-                          onPressed: _handleDidIt,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black.withOpacity(0.75),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 18,
+                          // Button
+                          ElevatedButton(
+                            onPressed: _handleDidIt,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black.withOpacity(0.75),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                            child: Text(
+                              _getButtonText(),
+                              style: GoogleFonts.poppins(
+                                fontSize:
+                                    18 *
+                                    MediaQuery.of(context).size.width /
+                                    400,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
                             ),
-                            elevation: 0,
                           ),
-                          child: Text(
-                            _getButtonText(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withOpacity(0.8),
+                        ],
+                      )
+                    : ElevatedButton(
+                        onPressed: _handleDidIt,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 40,
+                            vertical: 18,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          _getButtonText(),
+                          style: GoogleFonts.poppins(
+                            fontSize:
+                                18 * MediaQuery.of(context).size.width / 400,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                secondChild: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 0),
+                    ScaleTransition(
+                      scale: _doneScale,
+                      child: Text(
+                        _getDoneTitle(),
+                        style: GoogleFonts.poppins(
+                          fontSize:
+                              (_slot == 'night' ? 36 : 32) *
+                              MediaQuery.of(context).size.width /
+                              400,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: _slot == 'night'
+                              ? Colors.white.withOpacity(0.5)
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 8 * MediaQuery.of(context).size.width / 400,
+                    ),
+                    Text(
+                      _getDoneSubtitle(),
+                      style: GoogleFonts.poppins(
+                        color: _slot == 'night'
+                            ? Colors.white.withOpacity(0.4)
+                            : Colors.white,
+                        fontSize:
+                            (_slot == 'night' ? 14 : 20) *
+                            MediaQuery.of(context).size.width /
+                            400,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 56 * MediaQuery.of(context).size.width / 400,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: _showShareModal,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.08 : 0.2,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.share_rounded,
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.35 : 0.8,
+                              ),
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 28 * MediaQuery.of(context).size.width / 400,
+                        ),
+                        GestureDetector(
+                          onTap: () => _showSubmitModal(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.08 : 0.2,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.lightbulb_rounded,
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.35 : 0.8,
+                              ),
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 28 * MediaQuery.of(context).size.width / 400,
+                        ),
+                        GestureDetector(
+                          onTap: _showSupporterModal,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.08 : 0.2,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.star_rounded,
+                              color: Colors.white.withOpacity(
+                                _slot == 'night' ? 0.35 : 0.8,
+                              ),
+                              size: 26,
                             ),
                           ),
                         ),
                       ],
-                    )
-                  : ElevatedButton(
-                      onPressed: _handleDidIt,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 18,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _getButtonText(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
                     ),
-              secondChild: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 0),
-                  ScaleTransition(
-                    scale: _doneScale,
-                    child: Text(
-                      _getDoneTitle(),
-                      style: GoogleFonts.poppins(
-                        fontSize: _slot == 'night' ? 36 : 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                        color: _slot == 'night'
-                            ? Colors.white.withOpacity(0.5)
-                            : Colors.white,
-                      ),
-                    ),
-                  ),
 
-                  Text(
-                    _getDoneSubtitle(),
-                    style: GoogleFonts.poppins(
-                      color: _slot == 'night'
-                          ? Colors.white.withOpacity(0.4)
-                          : Colors.white,
-                      fontSize: _slot == 'night' ? 14 : 20,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 56),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                    if (_sponsoredBy.isNotEmpty) ...[
+                      SizedBox(
+                        height: 28 * MediaQuery.of(context).size.width / 400,
+                      ),
                       GestureDetector(
-                        onTap: _showShareModal,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.08 : 0.2,
-                            ),
-                            shape: BoxShape.circle,
+                        onTap: _sponsorUrl.isNotEmpty
+                            ? () async {
+                                try {
+                                  final uri = Uri.parse(_sponsorUrl);
+                                  await launchUrl(uri);
+                                } catch (e) {
+                                  print('Could not launch URL: $e');
+                                }
+                              }
+                            : null,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Supported with kindness by\n',
+                                style: GoogleFonts.poppins(
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w400,
+                                  color: _slot == 'night'
+                                      ? Colors.white.withOpacity(0.3)
+                                      : Colors.black54,
+                                  fontSize:
+                                      11 *
+                                      MediaQuery.of(context).size.width /
+                                      400,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              TextSpan(
+                                text: _sponsoredBy,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: _slot == 'night'
+                                      ? Colors.white.withOpacity(0.3)
+                                      : Colors.black54,
+                                  fontSize:
+                                      13 *
+                                      MediaQuery.of(context).size.width /
+                                      400,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Icon(
-                            Icons.share_rounded,
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.35 : 0.8,
-                            ),
-                            size: 22,
-                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      const SizedBox(width: 28),
-                      GestureDetector(
-                        onTap: () => _showSubmitModal(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.08 : 0.2,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.lightbulb_rounded,
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.35 : 0.8,
-                            ),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 28),
-                      GestureDetector(
-                        onTap: _showSupporterModal,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.08 : 0.2,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.star_rounded,
-                            color: Colors.white.withOpacity(
-                              _slot == 'night' ? 0.35 : 0.8,
-                            ),
-                            size: 26,
-                          ),
-                        ),
+                      SizedBox(
+                        height: 24 * MediaQuery.of(context).size.width / 400,
                       ),
                     ],
-                  ),
-
-                  if (_sponsoredBy.isNotEmpty) ...[
-                    const SizedBox(height: 28),
-                    GestureDetector(
-                      onTap: _sponsorUrl.isNotEmpty
-                          ? () async {
-                              try {
-                                final uri = Uri.parse(_sponsorUrl);
-                                await launchUrl(uri);
-                              } catch (e) {
-                                print('Could not launch URL: $e');
-                              }
-                            }
-                          : null,
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Supported with kindness by\n',
-                              style: GoogleFonts.poppins(
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w400,
-                                color: _slot == 'night'
-                                    ? Colors.white.withOpacity(0.3)
-                                    : Colors.black54,
-                                fontSize: 11,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            TextSpan(
-                              text: _sponsoredBy,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                color: _slot == 'night'
-                                    ? Colors.white.withOpacity(0.3)
-                                    : Colors.black54,
-                                fontSize: 13,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                   ],
-                ],
+                ),
+                crossFadeState: _isDone
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 400),
               ),
-              crossFadeState: _isDone
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 400),
             ),
           ),
-          SizedBox(height: 40),
+          SizedBox(height: 40 * MediaQuery.of(context).size.width / 400),
         ],
       ),
     );
@@ -1342,7 +1530,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         'Idea: ⭐ $_submittedBy | $_location',
         style: GoogleFonts.poppins(
           color: _slot == 'night' ? Colors.white38 : Colors.black38,
-          fontSize: 13,
+          fontSize: 13 * MediaQuery.of(context).size.width / 400,
           fontWeight: FontWeight.w400,
           letterSpacing: 0.4,
         ),
@@ -1551,7 +1739,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     );
     _doneScale = Tween<double>(
       begin: 1.0,
-      end: 1.08,
+      end: 1.04,
     ).animate(CurvedAnimation(parent: _doneAnimation, curve: Curves.easeInOut));
 
     _fadeInController = AnimationController(
@@ -1729,16 +1917,14 @@ class _NicknamesBannerState extends State<_NicknamesBanner>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && !widget.isDone) {
+    if (_isLoading) {
       return const SizedBox.shrink();
     }
 
-    // If done state, show "Next tiny body&mind..." text instead of nicknames
-    final text = widget.isDone
-        ? 'Next global tiny body&mind reset starting at: ${widget.nextSlotTime}. '
-        : _formattedNicknames
-              .map((name) => name.trim().isEmpty ? 'tom' : name)
-              .join('   •   ');
+    // Always show nicknames, even in done state
+    final text = _formattedNicknames
+        .map((name) => name.trim().isEmpty ? 'tom' : name)
+        .join('   •   ');
 
     final textStyle = GoogleFonts.poppins(
       fontSize: 12,

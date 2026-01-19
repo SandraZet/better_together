@@ -455,7 +455,7 @@ class _TimezoneModalState extends State<TimezoneModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Right now humans around the world join the same tiny moment.',
+                      'People around the world make the same tiny micro-action.',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -465,7 +465,7 @@ class _TimezoneModalState extends State<TimezoneModal> {
                     const SizedBox(height: 32),
                     // Info Text
                     Text(
-                      'Our day starts in UTC+14 in Line Islands.',
+                      'It starts in UTC+14 in Line Islands.',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -475,7 +475,7 @@ class _TimezoneModalState extends State<TimezoneModal> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Our day ends in UTC-12 in Baker Island.',
+                      'We end in UTC-12 in Baker Island.',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -620,6 +620,34 @@ class _TimezoneModalState extends State<TimezoneModal> {
                         final index = entry.key;
                         final nickname = entry.value;
 
+                        // Extract timestamp from nickname#timestamp format
+                        String? timeAgo;
+                        if (nickname.contains('#')) {
+                          final parts = nickname.split('#');
+                          if (parts.length == 2) {
+                            final timestamp = int.tryParse(parts[1]);
+                            if (timestamp != null) {
+                              final completedTime =
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                    timestamp,
+                                  );
+                              final diff = DateTime.now().difference(
+                                completedTime,
+                              );
+
+                              if (diff.inMinutes < 1) {
+                                timeAgo = 'just now';
+                              } else if (diff.inMinutes < 60) {
+                                timeAgo = '${diff.inMinutes} min ago';
+                              } else if (diff.inHours < 24) {
+                                timeAgo = '${diff.inHours} hr ago';
+                              } else {
+                                timeAgo = '${diff.inDays} d ago';
+                              }
+                            }
+                          }
+                        }
+
                         return FutureBuilder<String>(
                           future: NicknameHelper.formatNickname(nickname),
                           builder: (context, snapshot) {
@@ -647,13 +675,32 @@ class _TimezoneModalState extends State<TimezoneModal> {
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
-                                    child: Text(
-                                      displayName,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          displayName,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        if (timeAgo != null) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            timeAgo,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w400,
+                                              color: Colors.black.withOpacity(
+                                                0.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
                                 ],

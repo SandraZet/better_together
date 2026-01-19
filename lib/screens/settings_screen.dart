@@ -97,8 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildSlotTimeRow(String slotName, String timeRange) {
-    final times = timeRange.split(' - ');
+  Widget _buildSlotTimeRow(String slotName, String time) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -106,45 +105,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           slotName,
           style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 16 * MediaQuery.of(context).size.width / 400,
             fontWeight: FontWeight.w600,
           ),
         ),
-        Row(
-          children: [
-            SizedBox(
-              width: 50,
-              child: Text(
-                times[0],
-                textAlign: TextAlign.right,
-                style: GoogleFonts.poppins(
-                  color: Colors.grey[400],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Text(
-              ' - ',
-              style: GoogleFonts.poppins(
-                color: Colors.grey[400],
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            SizedBox(
-              width: 50,
-              child: Text(
-                times[1],
-                textAlign: TextAlign.left,
-                style: GoogleFonts.poppins(
-                  color: Colors.grey[400],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
+        Text(
+          time,
+          style: GoogleFonts.poppins(
+            color: Colors.grey[400],
+            fontSize: 16 * MediaQuery.of(context).size.width / 400,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ],
     );
@@ -175,11 +146,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Settings',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
-                  fontSize: 32,
+                  fontSize: 32 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24 * MediaQuery.of(context).size.width / 400),
               TextField(
                 controller: _nicknameController,
                 style: GoogleFonts.poppins(color: Colors.white),
@@ -195,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: const EdgeInsets.all(16),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
               TextField(
                 controller: _locationController,
                 style: GoogleFonts.poppins(color: Colors.white),
@@ -211,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: const EdgeInsets.all(16),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24 * MediaQuery.of(context).size.width / 400),
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -237,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Save',
                     style: GoogleFonts.poppins(
                       color: Colors.black,
-                      fontSize: 16,
+                      fontSize: 16 * MediaQuery.of(context).size.width / 400,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -247,14 +218,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Divider(color: Colors.grey[600], thickness: 1),
               const SizedBox(height: 24),
               Text(
-                'Slot Times',
+                'Actions refresh daily at:',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 20 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -263,13 +234,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildSlotTimeRow('Morning', '05:00 - 12:00'),
+                    _buildSlotTimeRow('Morning', '05:00'),
                     const SizedBox(height: 12),
-                    _buildSlotTimeRow('Noon', '12:00 - 17:00'),
+                    _buildSlotTimeRow('Noon', '12:00'),
                     const SizedBox(height: 12),
-                    _buildSlotTimeRow('Afternoon', '17:00 - 22:00'),
+                    _buildSlotTimeRow('Afternoon', '17:00'),
                     const SizedBox(height: 12),
-                    _buildSlotTimeRow('Night', '22:00 - 06:00'),
+                    _buildSlotTimeRow('Night', '22:00'),
                   ],
                 ),
               ),
@@ -280,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Imprint & Privacy Policy',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 20 * MediaQuery.of(context).size.width / 400,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -289,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 '(Last updated: 2025)',
                 style: GoogleFonts.poppins(
                   color: Colors.grey[400],
-                  fontSize: 12,
+                  fontSize: 12 * MediaQuery.of(context).size.width / 400,
                 ),
               ),
               const SizedBox(height: 16),
@@ -368,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'The current version is always displayed in the app.',
                 style: GoogleFonts.poppins(
                   color: Colors.grey[300],
-                  fontSize: 13,
+                  fontSize: 13 * MediaQuery.of(context).size.width / 400,
                   height: 1.6,
                 ),
               ),

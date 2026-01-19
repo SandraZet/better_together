@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:better_together/screens/onboarding_screen.dart';
+import 'package:better_together/screens/onboarding_screen_v2.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
@@ -61,11 +63,19 @@ class _SplashScreenState extends State<SplashScreen>
       final prefs = await SharedPreferences.getInstance();
       final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
+      if (kDebugMode) {
+        print('🔍 SplashScreen checking hasSeenOnboarding: $hasSeenOnboarding');
+        print('🔍 nextScreen type: ${widget.nextScreen.runtimeType}');
+      }
+
       // Bestimme Zielscreen basierend auf Onboarding-Status
       Widget targetScreen = widget.nextScreen;
-      if (hasSeenOnboarding && widget.nextScreen is OnboardingScreen) {
+      if (hasSeenOnboarding && widget.nextScreen is OnboardingScreenV2) {
         // Onboarding überspringen und direkt zum nächsten Screen
-        targetScreen = (widget.nextScreen as OnboardingScreen).nextScreen;
+        targetScreen = (widget.nextScreen as OnboardingScreenV2).nextScreen;
+        if (kDebugMode) {
+          print('✅ Skipping onboarding, going to: ${targetScreen.runtimeType}');
+        }
       }
 
       Navigator.of(context).pushReplacement(
@@ -210,7 +220,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       'Now.',
                       style: GoogleFonts.poppins(
-                        fontSize: 72,
+                        fontSize: 72 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: -1.5,
