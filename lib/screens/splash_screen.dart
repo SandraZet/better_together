@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:better_together/screens/onboarding_screen.dart';
+//import 'package:better_together/screens/onboarding_screen.dart';
 import 'package:better_together/screens/onboarding_screen_v2.dart';
 
 class SplashScreen extends StatefulWidget {

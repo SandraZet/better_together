@@ -45,14 +45,11 @@ class _TimezoneModalState extends State<TimezoneModal> {
     {'name': '🇳🇿 New Zealand', 'offset': 13.0},
     {'name': '🇫🇯 Fiji', 'offset': 12.0},
     {'name': '🇦🇺 Sydney', 'offset': 11.0},
-    {'name': '🇦🇺 Brisbane', 'offset': 10.0},
-    {'name': '🇷🇺 Vladivostok', 'offset': 10.0},
+    {'name': '🇦🇺 Brisbane / 🇷🇺 Vladivostok', 'offset': 10.0},
     {'name': '🇦🇺 Adelaide', 'offset': 9.5},
     {'name': '🇯🇵 Tokyo', 'offset': 9.0},
     {'name': '🇨🇳 Beijing', 'offset': 8.0},
-    {'name': '🇷🇺 Novosibirsk', 'offset': 7.0},
-    {'name': '🇹🇭 Bangkok', 'offset': 7.0},
-    {'name': '🇮🇩 Jakarta', 'offset': 7.0},
+    {'name': '🇷🇺 Novosibirsk / 🇹🇭 Bangkok / 🇮🇩 Jakarta', 'offset': 7.0},
     {'name': '🇲🇲 Yangon', 'offset': 6.5},
     {'name': '🇧🇩 Dhaka', 'offset': 6.0},
     {'name': '🇮🇳 Mumbai', 'offset': 5.5},
@@ -62,23 +59,17 @@ class _TimezoneModalState extends State<TimezoneModal> {
     {'name': '🇮🇷 Tehran', 'offset': 3.5},
     {'name': '🇷🇺 Moscow', 'offset': 3.0},
     {'name': '🇬🇷 Athens', 'offset': 2.0},
-    {'name': '🇩🇪 Berlin', 'offset': 1.0},
-    {'name': '🇫🇷 Paris', 'offset': 1.0},
-    {'name': '🇬🇧 London', 'offset': 0.0},
-    {'name': '🇮🇸 Reykjavik', 'offset': 0.0},
+    {'name': '🇩🇪 Berlin / 🇫🇷 Paris', 'offset': 1.0},
+    {'name': '🇬🇧 London / 🇮🇸 Reykjavik', 'offset': 0.0},
     {'name': '🇨🇻 Cape Verde', 'offset': -1.0},
     {'name': '🇬🇸 South Georgia', 'offset': -2.0},
     {'name': '🇧🇷 São Paulo', 'offset': -3.0},
     {'name': '🇨🇦 Newfoundland', 'offset': -3.5},
-    {'name': '🇧🇷 Manaus', 'offset': -4.0},
-    {'name': '🇨🇱 Santiago', 'offset': -4.0},
-    {'name': '🇨🇦 Toronto', 'offset': -5.0},
-    {'name': '🇺🇸 New York', 'offset': -5.0},
-    {'name': '🇺🇸 Chicago', 'offset': -6.0},
-    {'name': '🇲🇽 Mexico City', 'offset': -6.0},
+    {'name': '🇧🇷 Manaus / 🇨🇱 Santiago', 'offset': -4.0},
+    {'name': '🇨🇦 Toronto / 🇺🇸 New York', 'offset': -5.0},
+    {'name': '🇺🇸 Chicago / 🇲🇽 Mexico City', 'offset': -6.0},
     {'name': '🇺🇸 Denver', 'offset': -7.0},
-    {'name': '🇺🇸 Los Angeles', 'offset': -8.0},
-    {'name': '🇨🇦 Vancouver', 'offset': -8.0},
+    {'name': '🇺🇸 Los Angeles / 🇨🇦 Vancouver', 'offset': -8.0},
     {'name': '🇺🇸 Alaska', 'offset': -9.0},
     {'name': '🇺🇸 Hawaii', 'offset': -10.0},
     {'name': '🇦🇸 Samoa', 'offset': -11.0},
@@ -114,6 +105,19 @@ class _TimezoneModalState extends State<TimezoneModal> {
     if (localHour < 0) localHour += 24;
 
     return localHour;
+  }
+
+  // Get user's current UTC offset from device
+  double _getCurrentUserOffset() {
+    final offset = DateTime.now().timeZoneOffset;
+    return offset.inMinutes / 60.0;
+  }
+
+  // Check if timezone matches user's current timezone
+  bool _isUserTimezone(double offset) {
+    final userOffset = _getCurrentUserOffset();
+    return (offset - userOffset).abs() <
+        0.1; // Allow small difference for rounding
   }
 
   // Hilfsfunktion: Bestimme User's UTC Offset basierend auf lokaler Zeit
@@ -424,6 +428,90 @@ class _TimezoneModalState extends State<TimezoneModal> {
         .toList();
   }
 
+  // Count completions by UTC offset
+  Map<String, int> _getCompletionsByTimezone() {
+    final Map<String, int> counts = {};
+
+    for (final nickname in widget.nicknames) {
+      // Extract UTC from nickname|location|UTC format (or nickname|UTC for old format)
+      if (nickname.contains('|')) {
+        final parts = nickname.split('|');
+
+        // Try to get UTC from third part (new format: nickname|location|UTC)
+        String? timezone;
+        if (parts.length >= 3) {
+          timezone = parts[2];
+        } else if (parts.length >= 2) {
+          // Fallback to second part if it looks like UTC
+          timezone = parts[1];
+        }
+
+        // Remove timestamp if present (UTC#timestamp)
+        if (timezone != null && timezone.contains('#')) {
+          timezone = timezone.split('#')[0];
+        }
+
+        // Normalize UTC format
+        if (timezone != null && timezone.startsWith('UTC')) {
+          counts[timezone] = (counts[timezone] ?? 0) + 1;
+        }
+      }
+    }
+
+    return counts;
+  }
+
+  // Get formatted timezone string
+  String _formatTimezone(String tzName, double offset) {
+    final utcStr =
+        'UTC${offset >= 0 ? '+' : ''}${offset.toString().replaceAll('.0', '')}';
+    return '$tzName ($utcStr)';
+  }
+
+  // Build badge widget for completion count
+  Widget _buildCountBadge(int count, {bool isActive = false}) {
+    if (count == 0) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        gradient: isActive
+            ? const LinearGradient(
+                colors: [
+                  // OPTION 1: Türkis → Blau → Orange (lebendig)
+                  //Color(0xFF14B8A6), // türkis
+                  // Color(0xFF3B82F6), // blau
+                  Color(0xFFF97316), // orange
+                  // OPTION 2: Orange → Lila (aktuell)
+                  Color(0xFFF97316), // orange
+                  Color(0xFF9333EA), // purple
+                  // OPTION 3: Blau → Türkis (frisch)
+                  // Color(0xFF3B82F6), // blau
+                  // Color(0xFF14B8A6), // türkis
+
+                  // OPTION 4: Pink → Orange (warm)
+                  // Color(0xFFEC4899), // pink
+                  // Color(0xFFF97316), // orange
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isActive ? null : Colors.black.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: isActive ? Colors.white : Colors.black.withOpacity(0.5),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -496,19 +584,92 @@ class _TimezoneModalState extends State<TimezoneModal> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ..._getPassedTimeZones().map(
-                        (tz) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '  $tz',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black.withOpacity(0.4),
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
+                      ...() {
+                        final counts = _getCompletionsByTimezone();
+                        return _allTimezones
+                            .where((tz) => _hasPassed(tz['offset'] as double))
+                            .map((tz) {
+                              final utcStr =
+                                  'UTC${tz['offset'] >= 0 ? '+' : ''}${tz['offset'].toString().replaceAll('.0', '')}';
+                              final count = counts[utcStr] ?? 0;
+                              final isUserTz = _isUserTimezone(
+                                tz['offset'] as double,
+                              );
+
+                              // Split city names by slash
+                              final cities = (tz['name'] as String).split(
+                                ' / ',
+                              );
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: isUserTz
+                                    ? BoxDecoration(
+                                        color: Colors.black.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                      )
+                                    : null,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // First city with UTC offset
+                                          Text(
+                                            '${cities[0]} ($utcStr)',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black.withOpacity(
+                                                0.4,
+                                              ),
+                                              fontWeight: isUserTz
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w400,
+                                            ),
+                                          ),
+                                          // Additional cities without UTC
+                                          ...cities
+                                              .skip(1)
+                                              .map(
+                                                (city) => Text(
+                                                  city,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.black
+                                                        .withOpacity(0.4),
+                                                    fontWeight: isUserTz
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isUserTz) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '← You',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.black.withOpacity(0.3),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                    _buildCountBadge(count, isActive: false),
+                                  ],
+                                ),
+                              );
+                            })
+                            .toList();
+                      }(),
                       const SizedBox(height: 24),
                     ],
 
@@ -522,19 +683,87 @@ class _TimezoneModalState extends State<TimezoneModal> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ..._getActiveTimeZones().map(
-                      (tz) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '  $tz',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                    ...() {
+                      final counts = _getCompletionsByTimezone();
+                      return _allTimezones
+                          .where(
+                            (tz) => _isInSlotWindow(tz['offset'] as double),
+                          )
+                          .map((tz) {
+                            final utcStr =
+                                'UTC${tz['offset'] >= 0 ? '+' : ''}${tz['offset'].toString().replaceAll('.0', '')}';
+                            final count = counts[utcStr] ?? 0;
+                            final isUserTz = _isUserTimezone(
+                              tz['offset'] as double,
+                            );
+
+                            // Split city names by slash
+                            final cities = (tz['name'] as String).split(' / ');
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: isUserTz
+                                  ? BoxDecoration(
+                                      color: Colors.black.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                    )
+                                  : null,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // First city with UTC offset
+                                        Text(
+                                          '${cities[0]} ($utcStr)',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        // Additional cities without UTC
+                                        ...cities
+                                            .skip(1)
+                                            .map(
+                                              (city) => Text(
+                                                city,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isUserTz) ...[
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      '← You',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    _buildCountBadge(count, isActive: false),
+                                  ] else ...[
+                                    _buildCountBadge(count, isActive: false),
+                                  ],
+                                ],
+                              ),
+                            );
+                          })
+                          .toList();
+                    }(),
                     const SizedBox(height: 24),
 
                     // Time zones up next
@@ -547,19 +776,66 @@ class _TimezoneModalState extends State<TimezoneModal> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ..._getUpcomingTimeZones().map(
-                      (tz) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '  $tz',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black.withOpacity(0.3),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ),
+                    ...() {
+                      final counts = _getCompletionsByTimezone();
+                      return _allTimezones
+                          .where((tz) => _isUpcoming(tz['offset'] as double))
+                          .map((tz) {
+                            final utcStr =
+                                'UTC${tz['offset'] >= 0 ? '+' : ''}${tz['offset'].toString().replaceAll('.0', '')}';
+                            final count = counts[utcStr] ?? 0;
+
+                            // Split city names by slash
+                            final cities = (tz['name'] as String).split(' / ');
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // First city with UTC offset
+                                        Text(
+                                          '${cities[0]} ($utcStr)',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black.withOpacity(
+                                              0.3,
+                                            ),
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                        // Additional cities without UTC
+                                        ...cities
+                                            .skip(1)
+                                            .map(
+                                              (city) => Text(
+                                                city,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.black
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
+                                            ),
+                                      ],
+                                    ),
+                                  ),
+                                  _buildCountBadge(count, isActive: false),
+                                ],
+                              ),
+                            );
+                          })
+                          .toList();
+                    }(),
                     const SizedBox(height: 32),
 
                     // Divider

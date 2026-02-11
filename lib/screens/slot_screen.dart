@@ -1,3 +1,4 @@
+//import 'package:better_together/debug_prefs.dart';
 import 'package:better_together/debug_prefs.dart';
 import 'package:better_together/services/slot_loader.dart';
 
@@ -9,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:better_together/widgets/idea_modal.dart';
 import 'package:better_together/widgets/timezone_modal.dart';
@@ -81,6 +82,28 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   late Animation<double> _textFadeOut;
 
   List<Color> _gradientColors = [];
+
+  static const List<Shadow> _softTextShadows = [
+    Shadow(blurRadius: 8, offset: Offset(0, 2), color: Color(0x55000000)),
+  ];
+
+  static const List<Shadow> _strongTextShadows = [
+    Shadow(blurRadius: 12, offset: Offset(0, 3), color: Color(0x88000000)),
+  ];
+
+  TextStyle _applySoftShadow(TextStyle style) {
+    if (style.shadows != null && style.shadows!.isNotEmpty) {
+      return style;
+    }
+    return style.copyWith(shadows: _softTextShadows);
+  }
+
+  TextStyle _applyStrongShadow(TextStyle style) {
+    if (style.shadows != null && style.shadows!.isNotEmpty) {
+      return style;
+    }
+    return style.copyWith(shadows: _strongTextShadows);
+  }
 
   @override
   void initState() {
@@ -310,7 +333,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       'philip89',
       'manu_87',
       'kerstin92',
-      'rene88',
+
       'bianca90',
       'lukas85',
       'yvonne91',
@@ -362,6 +385,25 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     ];
     final randomLocation = (randomLocations..shuffle()).first;
 
+    // Generate random UTC timezone - only timezones that are AHEAD (already passed the time)
+    final currentUserTimezone = _getUserTimezone();
+    final currentOffset = DateTime.now().timeZoneOffset.inHours;
+
+    // Only use timezones that are > current offset (already ahead in time)
+    final availableTimezones = <String>[];
+    for (int i = currentOffset + 1; i <= 14; i++) {
+      availableTimezones.add('UTC${i >= 0 ? '+' : ''}$i');
+    }
+
+    // If list is empty (user is at UTC+14), use timezones slightly behind
+    if (availableTimezones.isEmpty) {
+      for (int i = currentOffset - 1; i >= currentOffset - 3 && i >= -12; i--) {
+        availableTimezones.add('UTC${i >= 0 ? '+' : ''}$i');
+      }
+    }
+
+    final randomTimezone = (availableTimezones..shuffle()).first;
+
     // Clear preferences BUT keep hasSeenOnboarding and done flags
     final prefs = await SharedPreferences.getInstance();
     final hadSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
@@ -388,8 +430,8 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     await prefs.setString('nickname', randomNickname);
     await prefs.setString('location', randomLocation);
 
-    // Complete task with nickname|location format
-    final displayName = '$randomNickname|$randomLocation';
+    // Complete task with nickname|location|UTC format
+    final displayName = '$randomNickname|$randomLocation|$randomTimezone';
     await _slotLoader.addCompletion(nickname: displayName);
 
     // Show toast
@@ -415,7 +457,8 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
     final prefs = await SharedPreferences.getInstance();
     final userLocation = prefs.getString('location') ?? 'now.space';
-    final displayName = '$_nickname|$userLocation';
+    final userTimezone = _getUserTimezone();
+    final displayName = '$_nickname|$userLocation|$userTimezone';
 
     await _slotLoader.addCompletion(nickname: displayName);
 
@@ -552,6 +595,24 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
     if (_isScreenSaverActive) {
       setState(() => _isScreenSaverActive = false);
       _startScreenSaver(); // Restart timer
+    }
+  }
+
+  // ================================================================
+  // TIMEZONE HELPER
+  // ================================================================
+  String _getUserTimezone() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    final hours = offset.inHours;
+    final minutes = (offset.inMinutes % 60).abs();
+
+    if (minutes == 0) {
+      final sign = hours >= 0 ? '+' : '';
+      return 'UTC$sign$hours';
+    } else {
+      final sign = hours >= 0 ? '+' : '';
+      return 'UTC$sign$hours:${minutes.toString().padLeft(2, '0')}';
     }
   }
 
@@ -722,21 +783,21 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          // const SizedBox(width: 8),
+          // IconButton(
+          //   icon: Icon(
+          //     Icons.bug_report,
+          //     color: _slot == 'night' ? const Color(0xFFE5E0EA) : Colors.white,
+          //     size: 20,
+          //   ),
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (_) => const DebugPrefsScreen()),
+          //     );
+          //   },
+          // ),
           const SizedBox(width: 8),
-          /* IconButton(
-            icon: Icon(
-              Icons.bug_report,
-              color: _slot == 'night' ? const Color(0xFFE5E0EA) : Colors.white,
-              size: 20,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DebugPrefsScreen()),
-              );
-            },
-          ),
-          const SizedBox(width: 8), */
         ],
       ),
 
@@ -975,10 +1036,12 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             const SizedBox(height: 24),
             Text(
               'Loading...',
-              style: GoogleFonts.poppins(
-                fontSize: 20 * MediaQuery.of(context).size.width / 400,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withOpacity(0.7),
+              style: _applySoftShadow(
+                GoogleFonts.poppins(
+                  fontSize: 20 * MediaQuery.of(context).size.width / 400,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.7),
+                ),
               ),
             ),
           ],
@@ -1000,20 +1063,24 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             const SizedBox(height: 24),
             Text(
               'No internet connection',
-              style: GoogleFonts.poppins(
-                fontSize: 32 * MediaQuery.of(context).size.width / 400,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
+              style: _applySoftShadow(
+                GoogleFonts.poppins(
+                  fontSize: 32 * MediaQuery.of(context).size.width / 400,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               'Please check your internet\nand try again',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18 * MediaQuery.of(context).size.width / 400,
-                color: Colors.white.withOpacity(0.7),
-                height: 1.4,
+              style: _applySoftShadow(
+                TextStyle(
+                  fontSize: 18 * MediaQuery.of(context).size.width / 400,
+                  color: Colors.white.withOpacity(0.7),
+                  height: 1.4,
+                ),
               ),
             ),
             const SizedBox(height: 32),
@@ -1059,20 +1126,24 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             const SizedBox(height: 24),
             Text(
               'No task yet',
-              style: GoogleFonts.poppins(
-                fontSize: 32 * MediaQuery.of(context).size.width / 400,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
+              style: _applySoftShadow(
+                GoogleFonts.poppins(
+                  fontSize: 32 * MediaQuery.of(context).size.width / 400,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               'Check back later for\ntoday\'s challenge',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18 * MediaQuery.of(context).size.width / 400,
-                color: Colors.white.withOpacity(0.7),
-                height: 1.4,
+              style: _applySoftShadow(
+                TextStyle(
+                  fontSize: 18 * MediaQuery.of(context).size.width / 400,
+                  color: Colors.white.withOpacity(0.7),
+                  height: 1.4,
+                ),
               ),
             ),
             const SizedBox(height: 32),
@@ -1120,16 +1191,18 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       opacity: _textFadeOut,
                       child: AutoSizeText(
                         _headline,
-                        style: GoogleFonts.poppins(
-                          fontSize:
-                              (_slot == 'night' ? 50 : 58) *
-                              MediaQuery.of(context).size.width /
-                              400,
-                          fontWeight: FontWeight.w900,
-                          color: _slot == 'night'
-                              ? const Color(0xFFE5E0EA)
-                              : Colors.white,
-                          height: 1.1,
+                        style: _applySoftShadow(
+                          GoogleFonts.poppins(
+                            fontSize:
+                                (_slot == 'night' ? 50 : 58) *
+                                MediaQuery.of(context).size.width /
+                                400,
+                            fontWeight: FontWeight.w900,
+                            color: _slot == 'night'
+                                ? const Color(0xFFE5E0EA)
+                                : Colors.white,
+                            height: 1.1,
+                          ),
                         ),
                         maxLines: 3,
                         minFontSize: 20,
@@ -1293,16 +1366,18 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       scale: _doneScale,
                       child: Text(
                         _getDoneTitle(),
-                        style: GoogleFonts.poppins(
-                          fontSize:
-                              (_slot == 'night' ? 36 : 32) *
-                              MediaQuery.of(context).size.width /
-                              400,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: _slot == 'night'
-                              ? Colors.white.withOpacity(0.5)
-                              : Colors.white,
+                        style: _applyStrongShadow(
+                          GoogleFonts.poppins(
+                            fontSize:
+                                (_slot == 'night' ? 36 : 32) *
+                                MediaQuery.of(context).size.width /
+                                400,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: _slot == 'night'
+                                ? Colors.white.withOpacity(0.5)
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -1311,16 +1386,18 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                     ),
                     Text(
                       _getDoneSubtitle(),
-                      style: GoogleFonts.poppins(
-                        color: _slot == 'night'
-                            ? Colors.white.withOpacity(0.4)
-                            : Colors.white,
-                        fontSize:
-                            (_slot == 'night' ? 14 : 20) *
-                            MediaQuery.of(context).size.width /
-                            400,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.5,
+                      style: _applyStrongShadow(
+                        GoogleFonts.poppins(
+                          color: _slot == 'night'
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.white,
+                          fontSize:
+                              (_slot == 'night' ? 14 : 20) *
+                              MediaQuery.of(context).size.width /
+                              400,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                     SizedBox(
@@ -1335,16 +1412,17 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.2,
+                                _slot == 'night' ? 0.08 : 0.18,
                               ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.share_rounded,
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.35 : 0.8,
+                                _slot == 'night' ? 0.5 : 0.9,
                               ),
                               size: 22,
+                              shadows: _strongTextShadows,
                             ),
                           ),
                         ),
@@ -1357,16 +1435,17 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.2,
+                                _slot == 'night' ? 0.08 : 0.18,
                               ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.lightbulb_rounded,
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.35 : 0.8,
+                                _slot == 'night' ? 0.5 : 0.9,
                               ),
                               size: 22,
+                              shadows: _strongTextShadows,
                             ),
                           ),
                         ),
@@ -1379,16 +1458,17 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.2,
+                                _slot == 'night' ? 0.08 : 0.18,
                               ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.star_rounded,
                               color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.35 : 0.8,
+                                _slot == 'night' ? 0.5 : 0.9,
                               ),
                               size: 26,
+                              shadows: _strongTextShadows,
                             ),
                           ),
                         ),

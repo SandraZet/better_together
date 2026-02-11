@@ -247,7 +247,7 @@ class _SupporterModalState extends State<SupporterModal> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'now.globalresets@gmail.com',
+                      'sandrazaenglein@gmail.com',
                       style: GoogleFonts.poppins(
                         color: Colors.black,
                         fontSize: 13 * MediaQuery.of(context).size.width / 400,

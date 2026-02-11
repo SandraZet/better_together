@@ -15,8 +15,12 @@ class NicknameHelper {
       if (cleanNickname.contains('|')) {
         final nicknameParts = cleanNickname.split('|');
         final nicknameOnly = nicknameParts[0].trim();
-        final location = nicknameParts[1].trim();
+        final location = nicknameParts.length >= 2
+            ? nicknameParts[1].trim()
+            : '';
 
+        // Remove UTC part if present (format: nickname|location|UTC)
+        // We only want to display nickname | location
         if (nicknameOnly.toLowerCase() == 'tom' &&
             parts.length == 2 &&
             parts[1].length >= 4) {
@@ -24,7 +28,19 @@ class NicknameHelper {
           final timestampStr = parts[1];
           final uniqueSuffix = timestampStr.substring(timestampStr.length - 4);
           cleanNickname = '$nicknameOnly-$uniqueSuffix | $location';
+        } else {
+          // For other nicknames, just show nickname | location (without UTC)
+          cleanNickname = '$nicknameOnly | $location';
         }
+      }
+    } else if (nickname.contains('|')) {
+      // No timestamp: format is nickname|location|UTC or nickname|location
+      final parts = nickname.split('|');
+      if (parts.length >= 2) {
+        final nicknameOnly = parts[0].trim();
+        final location = parts[1].trim();
+        // Only show nickname | location (ignore UTC if present)
+        cleanNickname = '$nicknameOnly | $location';
       }
     }
 
