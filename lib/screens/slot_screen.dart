@@ -1,6 +1,10 @@
 //import 'package:better_together/debug_prefs.dart';
 import 'package:better_together/debug_prefs.dart';
 import 'package:better_together/services/slot_loader.dart';
+import 'package:better_together/services/tour_service.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:better_together/screens/statistics_screen.dart';
+import 'package:better_together/screens/user_profile_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,6 +66,14 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   StreamSubscription<Map<String, dynamic>>? _counterSubscription;
   Timer? _screenSaverTimer;
   bool _isScreenSaverActive = false;
+
+  // Tutorial Coach Mark
+  TutorialCoachMark? _tutorialCoachMark;
+  final GlobalKey _boltKey = GlobalKey();
+  final GlobalKey _buttonKey = GlobalKey();
+  final GlobalKey _timezoneKey = GlobalKey();
+  final GlobalKey _statisticsKey = GlobalKey();
+  final GlobalKey _settingsKey = GlobalKey();
 
   // ================================================================
   // ANIMATION (unverändert)
@@ -208,6 +220,9 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
     // Start countdown AFTER slot is loaded
     _startCountdown();
+
+    // Show tutorial for first-time users
+    _showTutorialIfNeeded();
   }
 
   // ================================================================
@@ -555,7 +570,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
@@ -569,6 +584,11 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+
+    // If user tapped Replay Tour, show it now
+    if (result == 'replay_tour') {
+      _showTutorial();
+    }
   }
 
   void _showSupporterModal() {
@@ -620,6 +640,271 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   // UI + ANIMATIONS (DEIN CODE UNVERÄNDERT)
   // ================================================================
 
+  // ================================================================
+  // TUTORIAL TOUR
+  // ================================================================
+  void _createTutorial() {
+    final targets = <TargetFocus>[];
+
+    // Target 1: The Headline (main task) - START HERE
+    if (_boltKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "headline",
+          keyTarget: _boltKey,
+          alignSkip: Alignment.bottomRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 8,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Your moment",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "This is your micro-task for now. You can't fake it to feel it!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 2: Timezone/Counter info
+    if (_timezoneKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "timezone",
+          keyTarget: _timezoneKey,
+          alignSkip: Alignment.bottomRight,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Global Participation",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "See who's already completed this micro-task worldwide, which timezones have passed, and which are coming next. Scroll down to view all nicknames with their completion times!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 3: Statistics
+    if (_statisticsKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "statistics",
+          keyTarget: _statisticsKey,
+          alignSkip: Alignment.bottomRight,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Previous Days",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Check out history from previous days—see how many people from how many timezones joined, and which tasks you completed!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 4: Settings Menu (Now.)
+    if (_settingsKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "settings",
+          keyTarget: _settingsKey,
+          alignSkip: Alignment.bottomRight,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Settings",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Tap \"Now.\" to access settings where you can change your nickname, location, and replay this tour anytime!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 5: Action Button (LAST)
+    if (_buttonKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "button",
+          keyTarget: _buttonKey,
+          alignSkip: Alignment.bottomRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 16,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Take Action",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "You interrupted your life briefly. Perfect! After clicking, the next micro-task will come at the next slot time. Daily at 5am, 12pm, 5pm, and 10pm. See you then!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    _tutorialCoachMark = TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {
+        TourService.markTourAsSeen();
+      },
+      onSkip: () {
+        TourService.markTourAsSeen();
+        return true;
+      },
+    );
+  }
+
+  Future<void> _showTutorialIfNeeded() async {
+    // Wait a bit for the UI to be fully rendered
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    final hasSeenTour = await TourService.hasSeenTour();
+    if (!hasSeenTour && !_isLoading && !_isOffline) {
+      _createTutorial();
+      _tutorialCoachMark?.show(context: context);
+    }
+  }
+
+  Future<void> _showTutorial() async {
+    // Force show tutorial without checking if it was seen before
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
+    if (!_isLoading && !_isOffline) {
+      _createTutorial();
+      _tutorialCoachMark?.show(context: context);
+    }
+  }
+
   @override
   void dispose() {
     _countdownTimer?.cancel();
@@ -655,6 +940,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
         leading: FadeTransition(
           opacity: _fadeInAnimation,
           child: GestureDetector(
+            key: _settingsKey,
             onTap: _showLegalInfo,
             behavior: HitTestBehavior.opaque,
             child: Container(
@@ -707,6 +993,43 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             ),
           FadeTransition(
             opacity: _fadeInAnimation,
+            child: IconButton(
+              icon: Icon(
+                Icons.person,
+                color: _slot == 'night'
+                    ? Colors.white.withOpacity(0.35)
+                    : Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UserProfileScreen()),
+                );
+              },
+            ),
+          ),
+          FadeTransition(
+            opacity: _fadeInAnimation,
+            child: IconButton(
+              key: _statisticsKey,
+              icon: Icon(
+                Icons.bar_chart,
+                color: _slot == 'night'
+                    ? Colors.white.withOpacity(0.35)
+                    : Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+                );
+              },
+            ),
+          ),
+          FadeTransition(
+            opacity: _fadeInAnimation,
             child: InkWell(
               onTap: () {
                 showGeneralDialog(
@@ -753,6 +1076,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                 );
               },
               child: Padding(
+                key: _timezoneKey,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: [
@@ -1190,6 +1514,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                     child: FadeTransition(
                       opacity: _textFadeOut,
                       child: AutoSizeText(
+                        key: _boltKey,
                         _headline,
                         style: _applySoftShadow(
                           GoogleFonts.poppins(
@@ -1284,80 +1609,83 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: AnimatedCrossFade(
-                firstChild: _slot == 'night'
-                    ? Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Glow layers - multiple for softer effect
-                          Positioned(
-                            child: Container(
-                              width: 200,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(40),
-                                gradient: RadialGradient(
-                                  colors: [
-                                    const Color(0xFFE5E0EA).withOpacity(0.15),
-                                    const Color(0xFFE5E0EA).withOpacity(0.05),
-                                    Colors.transparent,
-                                  ],
+                firstChild: Container(
+                  key: _buttonKey,
+                  child: _slot == 'night'
+                      ? Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Glow layers - multiple for softer effect
+                            Positioned(
+                              child: Container(
+                                width: 200,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(40),
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      const Color(0xFFE5E0EA).withOpacity(0.15),
+                                      const Color(0xFFE5E0EA).withOpacity(0.05),
+                                      Colors.transparent,
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          // Button
-                          ElevatedButton(
-                            onPressed: _handleDidIt,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black.withOpacity(0.75),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 18,
+                            // Button
+                            ElevatedButton(
+                              onPressed: _handleDidIt,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black.withOpacity(0.75),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                  vertical: 18,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                              child: Text(
+                                _getButtonText(),
+                                style: GoogleFonts.poppins(
+                                  fontSize:
+                                      18 *
+                                      MediaQuery.of(context).size.width /
+                                      400,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
                               ),
-                              elevation: 0,
                             ),
-                            child: Text(
-                              _getButtonText(),
-                              style: GoogleFonts.poppins(
-                                fontSize:
-                                    18 *
-                                    MediaQuery.of(context).size.width /
-                                    400,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
+                          ],
+                        )
+                      : ElevatedButton(
+                          onPressed: _handleDidIt,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 18,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            _getButtonText(),
+                            style: GoogleFonts.poppins(
+                              fontSize:
+                                  18 * MediaQuery.of(context).size.width / 400,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.8),
                             ),
                           ),
-                        ],
-                      )
-                    : ElevatedButton(
-                        onPressed: _handleDidIt,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 40,
-                            vertical: 18,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
                         ),
-                        child: Text(
-                          _getButtonText(),
-                          style: GoogleFonts.poppins(
-                            fontSize:
-                                18 * MediaQuery.of(context).size.width / 400,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ),
+                ),
                 secondChild: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1403,76 +1731,79 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                     SizedBox(
                       height: 56 * MediaQuery.of(context).size.width / 400,
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: _showShareModal,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.18,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: _showShareModal,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.08 : 0.18,
+                                ),
+                                shape: BoxShape.circle,
                               ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.share_rounded,
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.5 : 0.9,
+                              child: Icon(
+                                Icons.share_rounded,
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.5 : 0.9,
+                                ),
+                                size: 22,
+                                shadows: _strongTextShadows,
                               ),
-                              size: 22,
-                              shadows: _strongTextShadows,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 28 * MediaQuery.of(context).size.width / 400,
-                        ),
-                        GestureDetector(
-                          onTap: () => _showSubmitModal(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.18,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.lightbulb_rounded,
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.5 : 0.9,
-                              ),
-                              size: 22,
-                              shadows: _strongTextShadows,
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 28 * MediaQuery.of(context).size.width / 400,
-                        ),
-                        GestureDetector(
-                          onTap: _showSupporterModal,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.08 : 0.18,
+                          SizedBox(
+                            width: 8 * MediaQuery.of(context).size.width / 400,
+                          ),
+                          GestureDetector(
+                            onTap: () => _showSubmitModal(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.08 : 0.18,
+                                ),
+                                shape: BoxShape.circle,
                               ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.star_rounded,
-                              color: Colors.white.withOpacity(
-                                _slot == 'night' ? 0.5 : 0.9,
+                              child: Icon(
+                                Icons.lightbulb_rounded,
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.5 : 0.9,
+                                ),
+                                size: 22,
+                                shadows: _strongTextShadows,
                               ),
-                              size: 26,
-                              shadows: _strongTextShadows,
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(
+                            width: 8 * MediaQuery.of(context).size.width / 400,
+                          ),
+                          GestureDetector(
+                            onTap: _showSupporterModal,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.08 : 0.18,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.star_rounded,
+                                color: Colors.white.withOpacity(
+                                  _slot == 'night' ? 0.5 : 0.9,
+                                ),
+                                size: 26,
+                                shadows: _strongTextShadows,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     if (_sponsoredBy.isNotEmpty) ...[
