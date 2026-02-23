@@ -2,9 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class FirebaseService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'nowdb',
+  );
 
   // ----------------------------
   // SLOT LOGIK
@@ -159,4 +163,135 @@ class FirebaseService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('nickname') ?? 'tom';
   }
+
+  // ----------------------------
+  // GET STATISTICS (from launch day)
+  // ----------------------------
+  Future<List<Map<String, dynamic>>> getStatistics() async {
+    final List<Map<String, dynamic>> statistics = [];
+
+    try {
+      // Start from launch day
+      final launchDate = DateTime(2026, 2, 20);
+      final today = DateTime.now();
+
+      debugPrint('📊 Loading statistics from $launchDate to $today');
+
+      // Generate all possible slot document IDs from launch to today
+      var currentDate = DateTime(
+        launchDate.year,
+        launchDate.month,
+        launchDate.day,
+      );
+      final endDate = DateTime(
+        today.year,
+        today.month,
+        today.day,
+      ).add(const Duration(days: 1));
+
+      while (currentDate.isBefore(endDate)) {
+        final dateString =
+            '${currentDate.year}-${_padTwo(currentDate.month)}-${_padTwo(currentDate.day)}';
+
+        for (final slotName in ['morning', 'noon', 'afternoon', 'night']) {
+          final docId = '${dateString}_$slotName';
+
+          try {
+            final slotSnap = await _firestore
+                .collection('slots')
+                .doc(docId)
+                .get();
+
+            if (slotSnap.exists) {
+              final slotData = slotSnap.data()!;
+              final taskId = slotData['taskId'] as String?;
+              final completions = slotData['completions'] as int? ?? 0;
+
+              debugPrint(
+                '📊 Found $docId: taskId=$taskId, completions=$completions, exists=true',
+              );
+
+              if (taskId != null && taskId.isNotEmpty && completions > 0) {
+                // Get task details
+                String headline = 'Unknown Task';
+                String submittedBy = '';
+
+                try {
+                  final taskSnap = await _firestore
+                      .collection('tasks')
+                      .doc(taskId)
+                      .get();
+                  if (taskSnap.exists) {
+                    final taskData = taskSnap.data()!;
+                    headline = taskData['headline'] ?? 'Unknown Task';
+                    submittedBy = taskData['submittedBy'] ?? '';
+                  }
+                } catch (e) {
+                  debugPrint('⚠️ Error loading task $taskId: $e');
+                }
+
+                // Count unique timezones
+                final nicknames = List<String>.from(
+                  slotData['nicknames'] ?? [],
+                );
+                final timezones = <String>{};
+                for (final nickname in nicknames) {
+                  // Remove timestamp suffix first (e.g., "name|location|UTC+1#12345" -> "name|location|UTC+1")
+                  final withoutTimestamp = nickname.split('#').first;
+                  final parts = withoutTimestamp.split('|');
+                  if (parts.length >= 3) {
+                    timezones.add(parts[2]); // UTC timezone
+                  }
+                }
+
+                statistics.add({
+                  'date': dateString,
+                  'slot': slotName,
+                  'headline': headline,
+                  'submittedBy': submittedBy,
+                  'completions': completions,
+                  'timezones': timezones.length,
+                });
+
+                debugPrint(
+                  '✅ Added: $headline ($completions completions, ${timezones.length} timezones)',
+                );
+              }
+            }
+          } catch (e) {
+            // Silently skip unavailable slots - they may not exist yet
+            if (e.toString().contains('unavailable')) {
+              continue;
+            }
+            debugPrint('📊 Error loading slot $docId: $e');
+          }
+
+          // Small delay to avoid overwhelming Firestore
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+
+        currentDate = currentDate.add(const Duration(days: 1));
+      }
+
+      // Sort by date descending (newest first)
+      statistics.sort((a, b) {
+        final dateCompare = (b['date'] as String).compareTo(
+          a['date'] as String,
+        );
+        if (dateCompare != 0) return dateCompare;
+
+        // If same date, sort by slot order
+        final slotOrder = {'morning': 0, 'noon': 1, 'afternoon': 2, 'night': 3};
+        return (slotOrder[b['slot']] ?? 0).compareTo(slotOrder[a['slot']] ?? 0);
+      });
+
+      debugPrint('📊 Total statistics loaded: ${statistics.length}');
+      return statistics;
+    } catch (e) {
+      debugPrint('❌ Error getting statistics: $e');
+      return [];
+    }
+  }
+
+  String _padTwo(int n) => n.toString().padLeft(2, '0');
 }

@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:better_together/services/profanity_service.dart';
 import 'package:better_together/services/analytics_service.dart';
+import 'package:better_together/services/notification_service.dart';
+import 'package:better_together/widgets/notification_opt_in_dialog.dart';
 
 class IdeaModal extends StatefulWidget {
   final String nickname;
@@ -30,6 +32,7 @@ class _IdeaModalState extends State<IdeaModal> {
   late final String _initialNickname;
   String _initialLocation = '';
   bool _isLoadingPrefs = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -117,6 +120,13 @@ class _IdeaModalState extends State<IdeaModal> {
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
+            onChanged: (value) {
+              if (_errorMessage != null) {
+                setState(() {
+                  _errorMessage = null;
+                });
+              }
+            },
           ),
           SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
           if (_initialNickname == 'tom' || _initialNickname.isEmpty) ...[
@@ -135,6 +145,11 @@ class _IdeaModalState extends State<IdeaModal> {
               ),
               onChanged: (val) {
                 _nickname = val.trim();
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
               },
             ),
             SizedBox(height: 8 * MediaQuery.of(context).size.width / 400),
@@ -156,18 +171,27 @@ class _IdeaModalState extends State<IdeaModal> {
             ),
             SizedBox(height: 16 * MediaQuery.of(context).size.width / 400),
           ],
+          if (_errorMessage != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                _errorMessage!,
+                style: GoogleFonts.poppins(
+                  color: Colors.orange[700],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(height: 12 * MediaQuery.of(context).size.width / 400),
+          ],
           ElevatedButton(
             onPressed: () async {
               final text = _ideaController.text.trim();
               if (text.isEmpty) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter your idea'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                }
+                setState(() {
+                  _errorMessage = 'Please enter your idea';
+                });
                 return;
               }
               HapticFeedback.mediumImpact();
@@ -193,35 +217,90 @@ class _IdeaModalState extends State<IdeaModal> {
                     profanityService.containsProfanity(nickname);
 
                 if (hasProfanity) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      content: const Text(
-                        'Hey there! 👋\nLet\'s keep our ideas and nicknames friendly and respectful.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      backgroundColor: Colors.orange[700],
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
+                  setState(() {
+                    _errorMessage =
+                        'Hey there! 👋 Let\'s keep our ideas and nicknames friendly and respectful.';
+                  });
                   return;
+                }
+
+                // Handle notification opt-in
+                String? fcmToken;
+                final notificationService = NotificationService();
+
+                // Check if user has already been asked
+                final hasBeenAsked =
+                    prefs.getBool('notification_asked') ?? false;
+
+                if (!hasBeenAsked) {
+                  // Show opt-in dialog
+                  final wantsNotifications = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => const NotificationOptInDialog(),
+                  );
+
+                  // Mark as asked
+                  await prefs.setBool('notification_asked', true);
+
+                  if (wantsNotifications == true) {
+                    // Request permission and get token
+                    final granted = await notificationService
+                        .requestPermission();
+                    if (granted) {
+                      fcmToken = await notificationService.getToken();
+                      await notificationService.setIdeaNotificationsOptIn(true);
+                    }
+                  } else {
+                    await notificationService.setIdeaNotificationsOptIn(false);
+                  }
+                } else {
+                  // User was already asked - check their preference
+                  final optedIn = await notificationService
+                      .hasOptedInForIdeaNotifications();
+                  if (optedIn) {
+                    fcmToken = await notificationService.getToken();
+                  }
                 }
 
                 final db = FirebaseFirestore.instanceFor(
                   app: Firebase.app(),
                   databaseId: 'nowdb',
                 );
-                await db.collection('ideas').add({
+
+                // Build idea document
+                final ideaData = {
                   'idea': text,
                   'nickname': nickname,
                   'location': location,
                   'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
                   'timestamp': FieldValue.serverTimestamp(),
-                });
+                };
+
+                // Add FCM token if available
+                if (fcmToken != null) {
+                  ideaData['fcmToken'] = fcmToken;
+                  ideaData['notificationSent'] = false;
+                }
+
+                await db.collection('ideas').add(ideaData);
+
+                // Save idea locally to SharedPreferences for profile page
+                final submittedIdeas =
+                    prefs.getStringList('submitted_ideas') ?? [];
+                final localIdea = [
+                  text, // idea text
+                  DateFormat('yyyy-MM-dd').format(DateTime.now()), // date
+                  location, // location
+                  DateTime.now().millisecondsSinceEpoch
+                      .toString(), // timestamp for sorting
+                ];
+                submittedIdeas.add(
+                  localIdea.join('|||'),
+                ); // Use delimiter to separate fields
+                await prefs.setStringList('submitted_ideas', submittedIdeas);
+                print(
+                  '💾 Saved idea locally: ${submittedIdeas.length} total ideas',
+                );
 
                 // Log analytics
                 await AnalyticsService().logIdeaSubmitted(

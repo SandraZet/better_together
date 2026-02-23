@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:better_together/screens/user_profile_screen.dart';
 //import 'package:better_together/screens/onboarding_screen.dart';
 import 'package:better_together/screens/onboarding_screen_v2.dart';
 
@@ -59,6 +61,31 @@ class _SplashScreenState extends State<SplashScreen>
 
     Future.delayed(const Duration(milliseconds: 4000), () async {
       if (!mounted) return;
+
+      // Check if app was opened from a notification
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
+      if (initialMessage != null) {
+        if (kDebugMode) {
+          print('📬 App opened from notification, navigating to profile');
+        }
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const UserProfileScreen(),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutQuad,
+                ),
+                child: child,
+              );
+            },
+          ),
+        );
+        return;
+      }
 
       final prefs = await SharedPreferences.getInstance();
       final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;

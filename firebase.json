@@ -3,6 +3,10 @@
     "rules": "firestore.rules",
     "database": "nowdb"
   },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
   "flutter": {
     "platforms": {
       "android": {

@@ -74,6 +74,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   final GlobalKey _timezoneKey = GlobalKey();
   final GlobalKey _statisticsKey = GlobalKey();
   final GlobalKey _settingsKey = GlobalKey();
+  final GlobalKey _profileKey = GlobalKey();
 
   // ================================================================
   // ANIMATION (unverändert)
@@ -752,7 +753,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Previous Days",
+                        "The movement in numbers",
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -761,7 +762,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        "Check out history from previous days—see how many people from how many timezones joined, and which tasks you completed!",
+                        "Check out history from previous days — see how many people from how many timezones joined, and which tasks you completed!",
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 16,
@@ -777,7 +778,50 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Target 4: Settings Menu (Now.)
+    // Target 4: Profile
+    if (_profileKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "profile",
+          keyTarget: _profileKey,
+          alignSkip: Alignment.bottomRight,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Your Impact",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "See how far your idea reached and how many people you inspired to do something small!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 5: Settings Menu (Now.)
     if (_settingsKey.currentContext != null) {
       targets.add(
         TargetFocus(
@@ -820,7 +864,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Target 5: Action Button (LAST)
+    // Target 6: Action Button (LAST)
     if (_buttonKey.currentContext != null) {
       targets.add(
         TargetFocus(
@@ -994,8 +1038,9 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
           FadeTransition(
             opacity: _fadeInAnimation,
             child: IconButton(
+              key: _profileKey,
               icon: Icon(
-                Icons.person,
+                Icons.auto_awesome,
                 color: _slot == 'night'
                     ? Colors.white.withOpacity(0.35)
                     : Colors.white,
@@ -1757,7 +1802,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                             ),
                           ),
                           SizedBox(
-                            width: 8 * MediaQuery.of(context).size.width / 400,
+                            width: 20 * MediaQuery.of(context).size.width / 400,
                           ),
                           GestureDetector(
                             onTap: () => _showSubmitModal(context),
@@ -1780,7 +1825,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                             ),
                           ),
                           SizedBox(
-                            width: 8 * MediaQuery.of(context).size.width / 400,
+                            width: 20 * MediaQuery.of(context).size.width / 400,
                           ),
                           GestureDetector(
                             onTap: _showSupporterModal,

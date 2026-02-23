@@ -451,8 +451,21 @@ class _TimezoneModalState extends State<TimezoneModal> {
           timezone = timezone.split('#')[0];
         }
 
-        // Normalize UTC format
+        // Normalize UTC format: Convert UTC+5:30 to UTC+5.5
         if (timezone != null && timezone.startsWith('UTC')) {
+          // Check if timezone has minute component (e.g., UTC+5:30)
+          if (timezone.contains(':')) {
+            final match = RegExp(r'UTC([+-]?\d+):(\d+)').firstMatch(timezone);
+            if (match != null) {
+              final hours = int.parse(match.group(1)!);
+              final minutes = int.parse(match.group(2)!);
+              final decimalOffset = hours + (minutes / 60.0);
+              // Format to match display format (remove .0 for whole numbers)
+              final sign = decimalOffset >= 0 ? '+' : '';
+              timezone =
+                  'UTC$sign${decimalOffset.toString().replaceAll('.0', '')}';
+            }
+          }
           counts[timezone] = (counts[timezone] ?? 0) + 1;
         }
       }
