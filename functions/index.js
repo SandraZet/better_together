@@ -103,6 +103,7 @@ exports.notifyIdeaScheduled = functions.firestore
           taskId: taskId,
           date: date,
           slot: slot,
+          headline: taskData.headline || '',
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
           route: '/slot'
         },
@@ -252,6 +253,7 @@ async function sendSlotStartNotification(slotName) {
         taskId: slotDoc.data().taskId,
         date,
         slot: slotName,
+        headline: taskData.headline || '',
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         route: '/slot',
       },

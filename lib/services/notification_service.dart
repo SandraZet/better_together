@@ -171,8 +171,12 @@ class NotificationService {
           prefs.getStringList('scheduled_notifications') ?? [];
 
       // Extract info from notification
+      // Use the dedicated headline data field so the profile screen shows clean
+      // task text rather than the time-sensitive push body (e.g. "It's 5am in UTC+14").
       final title = message.notification?.title ?? 'Task scheduled';
-      final body = message.notification?.body ?? '';
+      final body = message.data['headline']?.isNotEmpty == true
+          ? message.data['headline']!
+          : message.notification?.body ?? '';
       final date = message.data['date'] ?? '';
       final slot = message.data['slot'] ?? '';
       final timestamp = DateTime.now().millisecondsSinceEpoch.toString();

@@ -930,9 +930,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isLiveNow || isPast) ...[
+                if (isLiveNow || isPast || (!isLiveNow && !isPast)) ...[
                   Row(
                     children: [
+                      if (!isLiveNow && !isPast) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'UPCOMING',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10 * scale,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
                       if (isLiveNow) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(

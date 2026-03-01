@@ -168,16 +168,13 @@ class FirebaseService {
   // GET STATISTICS (from launch day)
   // ----------------------------
   Future<List<Map<String, dynamic>>> getStatistics() async {
-    final List<Map<String, dynamic>> statistics = [];
-
     try {
-      // Start from launch day
       final launchDate = DateTime(2026, 2, 20);
       final today = DateTime.now();
 
-      debugPrint('📊 Loading statistics from $launchDate to $today');
-
-      // Generate all possible slot document IDs from launch to today
+      // Build the list of all (docId, dateString, slotName) tuples
+      final slotEntries =
+          <({String docId, String dateString, String slotName})>[];
       var currentDate = DateTime(
         launchDate.year,
         launchDate.month,
@@ -192,96 +189,87 @@ class FirebaseService {
       while (currentDate.isBefore(endDate)) {
         final dateString =
             '${currentDate.year}-${_padTwo(currentDate.month)}-${_padTwo(currentDate.day)}';
-
         for (final slotName in ['morning', 'noon', 'afternoon', 'night']) {
-          final docId = '${dateString}_$slotName';
-
-          try {
-            final slotSnap = await _firestore
-                .collection('slots')
-                .doc(docId)
-                .get();
-
-            if (slotSnap.exists) {
-              final slotData = slotSnap.data()!;
-              final taskId = slotData['taskId'] as String?;
-              final completions = slotData['completions'] as int? ?? 0;
-
-              debugPrint(
-                '📊 Found $docId: taskId=$taskId, completions=$completions, exists=true',
-              );
-
-              if (taskId != null && taskId.isNotEmpty && completions > 0) {
-                // Get task details
-                String headline = 'Unknown Task';
-                String submittedBy = '';
-
-                try {
-                  final taskSnap = await _firestore
-                      .collection('tasks')
-                      .doc(taskId)
-                      .get();
-                  if (taskSnap.exists) {
-                    final taskData = taskSnap.data()!;
-                    headline = taskData['headline'] ?? 'Unknown Task';
-                    submittedBy = taskData['submittedBy'] ?? '';
-                  }
-                } catch (e) {
-                  debugPrint('⚠️ Error loading task $taskId: $e');
-                }
-
-                // Count unique timezones
-                final nicknames = List<String>.from(
-                  slotData['nicknames'] ?? [],
-                );
-                final timezones = <String>{};
-                for (final nickname in nicknames) {
-                  // Remove timestamp suffix first (e.g., "name|location|UTC+1#12345" -> "name|location|UTC+1")
-                  final withoutTimestamp = nickname.split('#').first;
-                  final parts = withoutTimestamp.split('|');
-                  if (parts.length >= 3) {
-                    timezones.add(parts[2]); // UTC timezone
-                  }
-                }
-
-                statistics.add({
-                  'date': dateString,
-                  'slot': slotName,
-                  'headline': headline,
-                  'submittedBy': submittedBy,
-                  'completions': completions,
-                  'timezones': timezones.length,
-                });
-
-                debugPrint(
-                  '✅ Added: $headline ($completions completions, ${timezones.length} timezones)',
-                );
-              }
-            }
-          } catch (e) {
-            // Silently skip unavailable slots - they may not exist yet
-            if (e.toString().contains('unavailable')) {
-              continue;
-            }
-            debugPrint('📊 Error loading slot $docId: $e');
-          }
-
-          // Small delay to avoid overwhelming Firestore
-          await Future.delayed(const Duration(milliseconds: 50));
+          slotEntries.add((
+            docId: '${dateString}_$slotName',
+            dateString: dateString,
+            slotName: slotName,
+          ));
         }
-
         currentDate = currentDate.add(const Duration(days: 1));
       }
 
-      // Sort by date descending (newest first)
+      // Fetch all slot documents in parallel
+      final slotSnaps = await Future.wait(
+        slotEntries.map(
+          (e) => _firestore.collection('slots').doc(e.docId).get(),
+        ),
+      );
+
+      // Collect unique task IDs that need to be loaded
+      final taskIdsToFetch = <String>{};
+      for (int i = 0; i < slotSnaps.length; i++) {
+        if (!slotSnaps[i].exists) continue;
+        final taskId = slotSnaps[i].data()?['taskId'] as String?;
+        final completions = slotSnaps[i].data()?['completions'] as int? ?? 0;
+        if (taskId != null && taskId.isNotEmpty && completions > 0) {
+          taskIdsToFetch.add(taskId);
+        }
+      }
+
+      // Fetch all required task documents in parallel (deduplicated)
+      final taskSnapList = await Future.wait(
+        taskIdsToFetch.map(
+          (id) => _firestore.collection('tasks').doc(id).get(),
+        ),
+      );
+      final taskCache = <String, Map<String, dynamic>?>{};
+      for (final snap in taskSnapList) {
+        taskCache[snap.id] = snap.exists ? snap.data() : null;
+      }
+
+      // Build statistics from the prefetched data
+      final List<Map<String, dynamic>> statistics = [];
+      for (int i = 0; i < slotSnaps.length; i++) {
+        final snap = slotSnaps[i];
+        if (!snap.exists) continue;
+
+        final slotData = snap.data()!;
+        final taskId = slotData['taskId'] as String?;
+        final completions = slotData['completions'] as int? ?? 0;
+
+        if (taskId == null || taskId.isEmpty || completions == 0) continue;
+
+        final taskData = taskCache[taskId];
+        final headline = taskData?['headline'] as String? ?? 'Unknown Task';
+        final submittedBy = taskData?['submittedBy'] as String? ?? '';
+
+        // Count unique timezones from nicknames
+        final nicknames = List<String>.from(slotData['nicknames'] ?? []);
+        final timezones = <String>{};
+        for (final nickname in nicknames) {
+          // Remove timestamp suffix (e.g., "name|location|UTC+1#12345" -> "name|location|UTC+1")
+          final parts = nickname.split('#').first.split('|');
+          if (parts.length >= 3) timezones.add(parts[2]);
+        }
+
+        statistics.add({
+          'date': slotEntries[i].dateString,
+          'slot': slotEntries[i].slotName,
+          'headline': headline,
+          'submittedBy': submittedBy,
+          'completions': completions,
+          'timezones': timezones.length,
+        });
+      }
+
+      // Sort by date descending (newest first), then by slot order
+      const slotOrder = {'morning': 0, 'noon': 1, 'afternoon': 2, 'night': 3};
       statistics.sort((a, b) {
         final dateCompare = (b['date'] as String).compareTo(
           a['date'] as String,
         );
         if (dateCompare != 0) return dateCompare;
-
-        // If same date, sort by slot order
-        final slotOrder = {'morning': 0, 'noon': 1, 'afternoon': 2, 'night': 3};
         return (slotOrder[b['slot']] ?? 0).compareTo(slotOrder[a['slot']] ?? 0);
       });
 

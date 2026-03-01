@@ -522,7 +522,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       return Opacity(
                         opacity: _page2Line1Controller.value,
                         child: Text(
-                          "No streaks.",
+                          "No scroll.",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize:
