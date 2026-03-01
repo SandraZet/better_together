@@ -140,17 +140,33 @@ class NotificationService {
 
     // Show local notification when app is in foreground
     if (message.notification != null) {
-      final androidDetails = AndroidNotificationDetails(
-        'idea_notifications',
-        'Idea Notifications',
-        channelDescription: 'Get notified when your ideas are scheduled',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@drawable/ic_notification',
-        color: const Color(0xFFFF6B35),
-        playSound: true,
-        enableVibration: true,
-      );
+      // Use silent channel for idea scheduling/slot-start notifications
+      // so they never buzz even when the app is open
+      final isSilent =
+          message.data.containsKey('date') || message.data.containsKey('slot');
+      final androidDetails = isSilent
+          ? const AndroidNotificationDetails(
+              'idea_silent',
+              'Idea Scheduled (Silent)',
+              channelDescription:
+                  'Quiet confirmation when your idea gets scheduled',
+              importance: Importance.low,
+              priority: Priority.low,
+              icon: '@drawable/ic_notification',
+              playSound: false,
+              enableVibration: false,
+            )
+          : AndroidNotificationDetails(
+              'idea_notifications',
+              'Idea Notifications',
+              channelDescription: 'Get notified when your ideas are scheduled',
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@drawable/ic_notification',
+              color: const Color(0xFFFF6B35),
+              playSound: true,
+              enableVibration: true,
+            );
 
       final notificationDetails = NotificationDetails(android: androidDetails);
 
