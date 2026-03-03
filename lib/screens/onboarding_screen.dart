@@ -26,11 +26,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _line3Controller;
   late AnimationController _nowController;
 
-  // Animation controllers for Page 2
-  late AnimationController _page2Line1Controller;
-  late AnimationController _page2Line2Controller;
-  late AnimationController _page2Line3Controller;
-  late AnimationController _page2TextController;
+  // Animation controllers for Page 2 (submit idea)
+  late AnimationController _page3Line1Controller;
+  late AnimationController _page3Line2Controller;
+  late AnimationController _page3TextController;
 
   @override
   void initState() {
@@ -54,20 +53,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       duration: const Duration(milliseconds: 1200),
     );
 
-    // Page 2 controllers
-    _page2Line1Controller = AnimationController(
+    _page3Line1Controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _page2Line2Controller = AnimationController(
+    _page3Line2Controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _page2Line3Controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _page2TextController = AnimationController(
+    _page3TextController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
@@ -93,26 +87,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _nowController.forward();
   }
 
-  void _startPage2Animations() async {
-    // Reset controllers first
-    _page2Line1Controller.reset();
-    _page2Line2Controller.reset();
-    _page2Line3Controller.reset();
-    _page2TextController.reset();
+  void _startPage3Animations() async {
+    _page3Line1Controller.reset();
+    _page3Line2Controller.reset();
+    _page3TextController.reset();
 
     await Future.delayed(const Duration(milliseconds: 300));
 
     await Future.delayed(const Duration(milliseconds: 500));
-    _page2Line1Controller.forward();
+    _page3Line1Controller.forward();
 
     await Future.delayed(const Duration(milliseconds: 1200));
-    _page2Line2Controller.forward();
-
-    await Future.delayed(const Duration(milliseconds: 1200));
-    _page2Line3Controller.forward();
+    _page3Line2Controller.forward();
 
     await Future.delayed(const Duration(milliseconds: 800));
-    _page2TextController.forward();
+    _page3TextController.forward();
   }
 
   @override
@@ -124,10 +113,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _line2Controller.dispose();
     _line3Controller.dispose();
     _nowController.dispose();
-    _page2Line1Controller.dispose();
-    _page2Line2Controller.dispose();
-    _page2Line3Controller.dispose();
-    _page2TextController.dispose();
+    _page3Line1Controller.dispose();
+    _page3Line2Controller.dispose();
+    _page3TextController.dispose();
     super.dispose();
   }
 
@@ -200,7 +188,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   Future<void> _nextPage() async {
     // Check profanity before proceeding
-    // Page 1 = index 0 (everyone), Page 2 = index 1 (value), Page 3 = index 2 (nickname), Page 4 = index 3 (location), Page 5 = index 4 (ready)
+    // Page 0=everyone, Page 1=submit idea, Page 2=nickname, Page 3=location, Page 4=ready
     if (_currentPage == 2) {
       final success = await _saveNickname();
       if (!success) return; // Don't proceed if profanity found
@@ -243,12 +231,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             _currentPage = index;
           });
           if (index == 1) {
-            _startPage2Animations();
+            _startPage3Animations();
           }
         },
         children: [
           _buildPage1(),
-          _buildNewPage2(),
+          _buildNewPage3(),
           _buildPage3(),
           _buildPage4(),
           _buildPage5(),
@@ -505,7 +493,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   //   );
   // }
 
-  Widget _buildNewPage2() {
+  Widget _buildNewPage3() {
     return Container(
       color: Colors.black,
       child: Stack(
@@ -517,12 +505,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AnimatedBuilder(
-                    animation: _page2Line1Controller,
+                    animation: _page3Line1Controller,
                     builder: (context, child) {
                       return Opacity(
-                        opacity: _page2Line1Controller.value,
+                        opacity: _page3Line1Controller.value,
                         child: Text(
-                          "No scroll.",
+                          "You do the task.",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize:
@@ -539,34 +527,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     height: 12 * MediaQuery.of(context).size.width / 400,
                   ),
                   AnimatedBuilder(
-                    animation: _page2Line2Controller,
+                    animation: _page3Line2Controller,
                     builder: (context, child) {
                       return Opacity(
-                        opacity: _page2Line2Controller.value,
+                        opacity: _page3Line2Controller.value,
                         child: Text(
-                          "No comparison.",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize:
-                                28 * MediaQuery.of(context).size.width / 400,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.3,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  SizedBox(
-                    height: 12 * MediaQuery.of(context).size.width / 400,
-                  ),
-                  AnimatedBuilder(
-                    animation: _page2Line3Controller,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: _page2Line3Controller.value,
-                        child: Text(
-                          "No obligation.",
+                          "You start the next one.",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize:
@@ -583,10 +549,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     height: 48 * MediaQuery.of(context).size.width / 400,
                   ),
                   AnimatedBuilder(
-                    animation: _page2TextController,
+                    animation: _page3TextController,
                     builder: (context, child) {
                       return Opacity(
-                        opacity: _page2TextController.value,
+                        opacity: _page3TextController.value,
                         child: ShaderMask(
                           shaderCallback: (bounds) => LinearGradient(
                             colors: [
@@ -598,11 +564,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             end: Alignment.bottomRight,
                           ).createShader(bounds),
                           child: Text(
-                            'One tiny action, when you feel like it.\nWith others. Anonymous. Worldwide.',
+                            'Submit your idea.\nSee the world do it.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               fontSize:
-                                  18 * MediaQuery.of(context).size.width / 400,
+                                  20 * MediaQuery.of(context).size.width / 400,
                               fontWeight: FontWeight.w500,
                               color: Colors.white,
                               fontStyle: FontStyle.italic,

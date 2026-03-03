@@ -198,25 +198,18 @@ class _SupporterModalState extends State<SupporterModal> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: Colors.black.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.lock_open_rounded,
-                      size: 14,
-                      color: Colors.green[700],
-                    ),
-                    const SizedBox(width: 6),
                     Text(
                       'NOW is completely free — this is 100% optional',
                       style: GoogleFonts.poppins(
                         fontSize: 12 * MediaQuery.of(context).size.width / 400,
                         fontWeight: FontWeight.w500,
-                        color: Colors.green[700],
+                        color: Colors.black.withOpacity(0.4),
                       ),
                     ),
                   ],

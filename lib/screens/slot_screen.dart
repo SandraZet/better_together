@@ -71,6 +71,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   TutorialCoachMark? _tutorialCoachMark;
   final GlobalKey _boltKey = GlobalKey();
   final GlobalKey _buttonKey = GlobalKey();
+  final GlobalKey _submitKey = GlobalKey();
   final GlobalKey _timezoneKey = GlobalKey();
   final GlobalKey _statisticsKey = GlobalKey();
   final GlobalKey _settingsKey = GlobalKey();
@@ -349,7 +350,6 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       'philip89',
       'manu_87',
       'kerstin92',
-
       'bianca90',
       'lukas85',
       'yvonne91',
@@ -364,20 +364,6 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       'tobi91',
       'sonja85',
       'daniel93',
-      'alpenrose',
-      'bergfex_92',
-      'wienerblut88',
-      'donaunixe',
-      'edelweiss91',
-      'sachertorte_fan',
-      'mozartkugel',
-      'bergkristall89',
-      'almrausch',
-      'heurigengeist',
-      'kaiserschmarrn_lover',
-      'lipizzaner93',
-      'kaffeehaus_poet',
-      'schneehaeschen',
     ];
     final randomNickname = (randomNames..shuffle()).first;
 
@@ -864,7 +850,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Target 6: Action Button (LAST)
+    // Target 6: Action Button
     if (_buttonKey.currentContext != null) {
       targets.add(
         TargetFocus(
@@ -894,6 +880,51 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 12),
                       Text(
                         "You interrupted your life briefly. Perfect! After clicking, the next micro-task will come at the next slot time. Daily at 5am, 12pm, 5pm, and 10pm. See you then!",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Target 7: Submit Idea (LAST — the other half of the app)
+    if (_submitKey.currentContext != null) {
+      targets.add(
+        TargetFocus(
+          identify: "submit",
+          keyTarget: _submitKey,
+          alignSkip: Alignment.bottomRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 8,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Your ideas, everyone's impact",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Got an idea everyone should try? Submit it — then see the impact of your idea as it spreads and inspires others to take action!",
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 16,
@@ -1152,7 +1183,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // const SizedBox(width: 8),
+          const SizedBox(width: 8),
           // IconButton(
           //   icon: Icon(
           //     Icons.bug_report,
@@ -1166,7 +1197,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
           //     );
           //   },
           // ),
-          const SizedBox(width: 8),
+          // const SizedBox(width: 8),
         ],
       ),
 
@@ -1643,11 +1674,11 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          SizedBox(height: 44 * MediaQuery.of(context).size.width / 400),
+          SizedBox(height: 20 * MediaQuery.of(context).size.width / 400),
 
           FadeTransition(opacity: _textFadeOut, child: _buildSubmittedBy()),
 
-          const Spacer(flex: 1),
+          SizedBox(height: 60 * MediaQuery.of(context).size.width / 400),
 
           // AnimatedCrossFade: Button → Done Message
           Center(
@@ -1655,81 +1686,79 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: AnimatedCrossFade(
                 firstChild: Container(
-                  key: _buttonKey,
-                  child: _slot == 'night'
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Glow layers - multiple for softer effect
-                            Positioned(
-                              child: Container(
-                                width: 200,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(40),
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      const Color(0xFFE5E0EA).withOpacity(0.15),
-                                      const Color(0xFFE5E0EA).withOpacity(0.05),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Button
-                            ElevatedButton(
-                              onPressed: _handleDidIt,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black.withOpacity(0.75),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 40,
-                                  vertical: 18,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: Text(
-                                _getButtonText(),
-                                style: GoogleFonts.poppins(
-                                  fontSize:
-                                      18 *
-                                      MediaQuery.of(context).size.width /
-                                      400,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : ElevatedButton(
-                          onPressed: _handleDidIt,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 18,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Submit idea button — off-white with rounded shadow, secondary
+                        Container(
+                          height: 58,
+                          width: 58,
+                          decoration: BoxDecoration(
+                            color: _slot == 'night'
+                                ? Colors.white.withOpacity(0.12)
+                                : const Color(0xFFF5F2EE),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [],
                           ),
-                          child: Text(
-                            _getButtonText(),
-                            style: GoogleFonts.poppins(
-                              fontSize:
-                                  18 * MediaQuery.of(context).size.width / 400,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withOpacity(0.8),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              key: _submitKey,
+                              onTap: () => _showSubmitModal(context),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Center(
+                                child: Icon(
+                                  Icons.lightbulb_rounded,
+                                  size: 26,
+                                  color: _slot == 'night'
+                                      ? Colors.white.withOpacity(0.6)
+                                      : Colors.black87,
+                                ),
+                              ),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        // Did it! button — black, primary
+                        SizedBox(
+                          key: _buttonKey,
+                          height: 58,
+                          child: ElevatedButton(
+                            onPressed: _handleDidIt,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _slot == 'night'
+                                  ? Colors.black.withOpacity(0.75)
+                                  : Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              _getButtonText(),
+                              style: GoogleFonts.poppins(
+                                fontSize:
+                                    18 *
+                                    MediaQuery.of(context).size.width /
+                                    400,
+                                fontWeight: FontWeight.w700,
+                                color: _slot == 'night'
+                                    ? Colors.white.withOpacity(0.8)
+                                    : Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 secondChild: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1916,7 +1945,8 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          SizedBox(height: 40 * MediaQuery.of(context).size.width / 400),
+          const Spacer(flex: 1),
+          SizedBox(height: 20 * MediaQuery.of(context).size.width / 400),
         ],
       ),
     );
