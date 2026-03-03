@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:better_together/services/profanity_service.dart';
 import 'package:better_together/services/tour_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   final String currentNickname;
@@ -96,6 +97,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildSocialButton({
+    required String label,
+    required IconData icon,
+    required String url,
+    required String appUrl,
+    required double scale,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () async {
+          final appUri = Uri.parse(appUrl);
+          final webUri = Uri.parse(url);
+          if (await canLaunchUrl(appUri)) {
+            await launchUrl(appUri);
+          } else {
+            await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 22 * scale, color: Colors.black87),
+              SizedBox(height: 6 * scale),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12 * scale,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildSlotTimeRow(String slotName, String time) {
@@ -278,6 +323,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+              ),
+
+              SizedBox(height: 40 * scale),
+              Divider(color: Colors.grey[200], thickness: 1),
+              SizedBox(height: 24 * scale),
+
+              // Social Media section
+              Text(
+                'Follow Now.',
+                style: GoogleFonts.poppins(
+                  color: Colors.black,
+                  fontSize: 18 * scale,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 4 * scale),
+              Text(
+                'Stay connected and share your moments.',
+                style: GoogleFonts.poppins(
+                  color: Colors.black45,
+                  fontSize: 13 * scale,
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+              Row(
+                children: [
+                  _buildSocialButton(
+                    label: 'Instagram',
+                    icon: Icons.camera_alt_rounded,
+                    url: 'https://www.instagram.com/now.sharedmoments',
+                    appUrl: 'instagram://user?username=now.sharedmoments',
+                    scale: scale,
+                  ),
+                  SizedBox(width: 10 * scale),
+                  _buildSocialButton(
+                    label: 'TikTok',
+                    icon: Icons.music_note_rounded,
+                    url: 'https://www.tiktok.com/@now.sharedmoments',
+                    appUrl: 'snssdk1233://user/profile/now.sharedmoments',
+                    scale: scale,
+                  ),
+                  SizedBox(width: 10 * scale),
+                  _buildSocialButton(
+                    label: 'Reddit',
+                    icon: Icons.forum_rounded,
+                    url: 'https://www.reddit.com/r/now_sharedmoments',
+                    appUrl: 'reddit://r/now_sharedmoments',
+                    scale: scale,
+                  ),
+                ],
               ),
 
               SizedBox(height: 40 * scale),
