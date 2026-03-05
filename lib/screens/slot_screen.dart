@@ -58,6 +58,7 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   bool _isLoading = true;
   bool _isOffline = false;
   bool _showCloseButton = false;
+  bool _isSubmitting = false;
 
   final TextEditingController _ideaController = TextEditingController();
 
@@ -455,26 +456,58 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   // ON DID IT
   // ================================================================
   Future<void> _handleDidIt() async {
+    // Prevent double-tap submission
+    if (_isSubmitting) return;
+    
+    // Check if already done for this slot
+    final prefs = await SharedPreferences.getInstance();
+    final date = _slotLoader.getCurrentDateString();
+    final slot = _slotLoader.getCurrentSlotName();
+    final doneKey = '${date}_${slot}_done';
+    
+    if (prefs.getBool(doneKey) == true) {
+      print('⚠️ Task already completed for this slot: $doneKey');
+      return;
+    }
+    
+    setState(() {
+      _isSubmitting = true;
+    });
+    
     HapticFeedback.mediumImpact();
 
-    final prefs = await SharedPreferences.getInstance();
     final userLocation = prefs.getString('location') ?? 'now.space';
     final userTimezone = _getUserTimezone();
     final displayName = '$_nickname|$userLocation|$userTimezone';
 
-    await _slotLoader.addCompletion(nickname: displayName);
+    try {
+      await _slotLoader.addCompletion(nickname: displayName);
 
-    // Log analytics
-    await _analytics.logTaskCompleted(
-      taskId: _taskId,
-      slot: _slot,
-      nickname: _nickname,
-    );
+      // Log analytics
+      await _analytics.logTaskCompleted(
+        taskId: _taskId,
+        slot: _slot,
+        nickname: _nickname,
+      );
 
-    setState(() {
-      _isDone = true;
-      _showPlusOne = true;
-    });
+      setState(() {
+        _isDone = true;
+        _showPlusOne = true;
+      });
+    } catch (e) {
+      print('❌ Error submitting completion: $e');
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    } finally {
+      // Always reset after attempt
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
 
     // bolt party
     _boltCelebration.forward(from: 0);
@@ -1727,12 +1760,13 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                           key: _buttonKey,
                           height: 58,
                           child: ElevatedButton(
-                            onPressed: _handleDidIt,
+                            onPressed: (_isSubmitting || _isDone) ? null : _handleDidIt,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _slot == 'night'
                                   ? Colors.black.withOpacity(0.75)
                                   : Colors.black,
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey.withOpacity(0.5),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 40,
                               ),
