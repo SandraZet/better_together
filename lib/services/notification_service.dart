@@ -53,19 +53,16 @@ class NotificationService {
       );
     }
 
-    // Request permission (will show system dialog on Android 13+)
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-
+    // Only fetch the token if permission was already granted previously.
+    // Never prompt at app start — the opt-in dialog in idea_modal.dart handles that.
+    final settings = await _messaging.getNotificationSettings();
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('✅ Notification permission granted');
+      debugPrint('✅ Notification permission already granted');
       await _getToken();
     } else {
-      debugPrint('❌ Notification permission denied');
+      debugPrint(
+        'ℹ️ Notification permission not yet granted — will ask on idea submission',
+      );
     }
 
     // Clear badge when app opens

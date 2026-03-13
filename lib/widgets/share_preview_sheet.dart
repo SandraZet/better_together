@@ -80,9 +80,11 @@ class _SharePreviewSheetState extends State<SharePreviewSheet> {
       // Share the image
       if (!mounted) return;
 
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: '"${widget.text}" \nNOW. 🚀\n\nBe part. Or not. ✨');
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text:
+            '"${widget.text}" \nNOW. 🚀\n\nBe part. Or not. ✨\n\nAvailable on Android \niOS coming soon\n\nhttps://play.google.com/store/apps/details?id=com.szetstudios.now',
+      );
 
       // Clean up temporary file after sharing
       try {

@@ -458,22 +458,22 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
   Future<void> _handleDidIt() async {
     // Prevent double-tap submission
     if (_isSubmitting) return;
-    
+
     // Check if already done for this slot
     final prefs = await SharedPreferences.getInstance();
     final date = _slotLoader.getCurrentDateString();
     final slot = _slotLoader.getCurrentSlotName();
     final doneKey = '${date}_${slot}_done';
-    
+
     if (prefs.getBool(doneKey) == true) {
       print('⚠️ Task already completed for this slot: $doneKey');
       return;
     }
-    
+
     setState(() {
       _isSubmitting = true;
     });
-    
+
     HapticFeedback.mediumImpact();
 
     final userLocation = prefs.getString('location') ?? 'now.space';
@@ -1760,13 +1760,17 @@ class _SlotScreenState extends State<SlotScreen> with TickerProviderStateMixin {
                           key: _buttonKey,
                           height: 58,
                           child: ElevatedButton(
-                            onPressed: (_isSubmitting || _isDone) ? null : _handleDidIt,
+                            onPressed: (_isSubmitting || _isDone)
+                                ? null
+                                : _handleDidIt,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _slot == 'night'
                                   ? Colors.black.withOpacity(0.75)
                                   : Colors.black,
                               foregroundColor: Colors.white,
-                              disabledBackgroundColor: Colors.grey.withOpacity(0.5),
+                              disabledBackgroundColor: Colors.grey.withOpacity(
+                                0.5,
+                              ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 40,
                               ),
